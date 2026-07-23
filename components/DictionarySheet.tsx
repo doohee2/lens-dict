@@ -64,10 +64,20 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     }
   }, [scannedTextBlock]);
 
+  const getDynamicTextSizeClass = (textLength: number) => {
+    if (textLength < 40) return 'text-4xl leading-relaxed';
+    if (textLength < 80) return 'text-3xl leading-relaxed';
+    if (textLength < 150) return 'text-2xl leading-loose';
+    if (textLength < 300) return 'text-xl leading-loose';
+    return 'text-lg leading-loose';
+  };
+
   const renderTextBlock = (text: string) => {
+    const dynamicSizeClass = getDynamicTextSizeClass(text.length);
+    
     return (
-      <div className="bg-surface-container-lowest p-6 rounded-2xl overflow-y-auto w-full text-left shadow-inner border border-outline-variant/30 flex-1">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-surface-container-lowest p-6 rounded-2xl overflow-y-auto w-full text-left shadow-inner border border-outline-variant/30 flex-1 flex flex-col justify-center">
+        <div className="flex justify-between items-center mb-4 shrink-0">
           <h3 className="font-bold text-primary-fixed-dim">스캔된 텍스트 (단어를 탭하세요)</h3>
           <button 
             onClick={onClearScannedText}
@@ -76,24 +86,26 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             <span className="material-symbols-outlined">delete</span>
           </button>
         </div>
-        {text.split('\n').map((line, i) => (
-          <p key={i} className="mb-3 leading-loose text-lg font-body-lg text-on-surface">
-            {line.split(' ').map((word, j) => {
-              const cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
-              return (
-                <span 
-                  key={j} 
-                  onClick={() => {
-                    if (cleanWord) setSearchWord(cleanWord);
-                  }}
-                  className="cursor-pointer hover:bg-primary-container hover:text-on-primary-container rounded px-1 transition-colors active:bg-primary-fixed"
-                >
-                  {word}{' '}
-                </span>
-              );
-            })}
-          </p>
-        ))}
+        <div className="flex-1 flex flex-col justify-center items-center text-center">
+          {text.split('\n').map((line, i) => (
+            <p key={i} className={`mb-3 font-body-lg text-on-surface ${dynamicSizeClass}`}>
+              {line.split(' ').map((word, j) => {
+                const cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
+                return (
+                  <span 
+                    key={j} 
+                    onClick={() => {
+                      if (cleanWord) setSearchWord(cleanWord);
+                    }}
+                    className="cursor-pointer hover:bg-primary-container hover:text-on-primary-container rounded px-1 transition-colors active:bg-primary-fixed"
+                  >
+                    {word}{' '}
+                  </span>
+                );
+              })}
+            </p>
+          ))}
+        </div>
       </div>
     );
   };
