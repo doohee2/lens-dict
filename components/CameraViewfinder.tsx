@@ -61,17 +61,24 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       const cropWidth = guide.width;
       const cropHeight = guide.height;
       
-      // Create offscreen canvas matched to video display size
+      // Math for object-fit: cover
+      const scale = Math.max(container.width / video.videoWidth, container.height / video.videoHeight);
+      const scaledVideoWidth = video.videoWidth * scale;
+      const scaledVideoHeight = video.videoHeight * scale;
+      const offsetX = (container.width - scaledVideoWidth) / 2;
+      const offsetY = (container.height - scaledVideoHeight) / 2;
+      
+      // Create offscreen canvas matched to container display size
       const canvas = document.createElement('canvas');
       canvas.width = container.width;
       canvas.height = container.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       
-      // Draw the video frame covering the container
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Draw the video exactly as object-fit: cover renders it
+      ctx.drawImage(video, offsetX, offsetY, scaledVideoWidth, scaledVideoHeight);
       
-      // Extract the cropped imageData
+      // Extract the exact cropped imageData corresponding to the guide box
       const imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
       const data = imageData.data;
       
