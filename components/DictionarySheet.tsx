@@ -171,12 +171,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   return (
     <>
       <section 
-        className={`absolute md:static bottom-0 left-0 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 md:h-full ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
+        className={`absolute bottom-0 left-0 w-full bg-surface/95 backdrop-blur-3xl border-outline-variant flex flex-col rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 transition-transform duration-300 ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
         style={{ height: `${sheetHeight}vh` }}
       >
         {/* Mobile Puller Handle */}
         <div 
-          className="w-full flex justify-center pt-3 pb-3 md:hidden cursor-grab active:cursor-grabbing touch-none"
+          className="w-full flex justify-center pt-3 pb-3 cursor-grab active:cursor-grabbing touch-none"
           onPointerDown={handlePointerDown}
         >
           <div className="w-12 h-1.5 bg-outline-variant rounded-full pointer-events-none"></div>
@@ -232,14 +232,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
               
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="font-display-mobile md:font-display-lg text-display-mobile md:text-display-lg text-on-surface tracking-tight">{testResult.word}</h2>
+                  <h2 className="font-display-mobile text-display-mobile text-on-surface tracking-tight">{testResult.word}</h2>
                 </div>
               </div>
               
               <div className="h-px w-full bg-outline-variant/50 my-2"></div>
               
               <div 
-                className="text-sm md:text-base text-on-surface leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
+                className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
                 dangerouslySetInnerHTML={{ __html: testResult.definition }}
               ></div>
             </article>

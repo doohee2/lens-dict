@@ -139,7 +139,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   };
 
   return (
-    <section ref={containerRef} className="w-full md:w-1/2 h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
+    <section ref={containerRef} className="w-full h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-container-low to-surface-container-highest opacity-50 mix-blend-overlay"></div>
       

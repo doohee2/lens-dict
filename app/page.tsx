@@ -18,7 +18,7 @@ export default function Home() {
         onOpenSettings={() => setIsSettingsOpen(true)} 
         onOpenAbout={() => setIsAboutOpen(true)}
       />
-      <main className="flex-1 flex flex-col md:flex-row mt-[env(safe-area-inset-top,0px)] pt-[48px] md:pb-0 h-[100dvh] relative overflow-hidden">
+      <main className="flex-1 flex flex-col mt-[env(safe-area-inset-top,0px)] pt-[48px] h-[100dvh] relative overflow-hidden">
         <CameraViewfinder onTextScanned={(text) => setGlobalOCRText(text)} />
         <DictionarySheet scannedTextBlock={globalOCRText} onClearScannedText={() => setGlobalOCRText('')} />
       </main>
