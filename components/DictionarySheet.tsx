@@ -128,8 +128,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     const dynamicFontSize = `clamp(14px, calc(145cqw / ${maxLineLength}), 40px)`;
     
     return (
-      <div className="bg-surface-container-lowest p-6 rounded-2xl w-full text-left shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-outline-variant/30 flex-1 flex flex-col overflow-hidden @container">
-        <div className="flex justify-between items-center mb-4 pb-3 border-b border-outline-variant/50 shrink-0">
+      <div className="bg-surface-container-lowest p-5 md:p-6 rounded-2xl w-full text-left shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-outline-variant flex-1 flex flex-col overflow-hidden @container">
+        <div className="flex justify-between items-center mb-3 pb-3 border-b border-outline-variant shrink-0">
           <h3 className="font-bold text-primary-fixed-dim">OCR 스캔 텍스트 (단어 탭하여 선택)</h3>
           <button 
             onClick={onClearScannedText}
@@ -182,9 +182,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
           <div className="w-12 h-1.5 bg-outline-variant rounded-full pointer-events-none"></div>
         </div>
         
-        <div className="flex-1 overflow-y-auto px-margin-edge py-stack-md flex flex-col gap-container-gap">
+        <div className={`flex-1 px-margin-edge py-stack-md flex flex-col gap-container-gap ${scannedTextBlock && !searchWord ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           
-
           {/* Search Bar */}
           <div className="relative w-full mb-2 shrink-0">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
