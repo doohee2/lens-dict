@@ -129,7 +129,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   };
 
   return (
-    <section ref={containerRef} className="w-full md:w-1/2 h-[40vh] md:h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
+    <section ref={containerRef} className="w-full md:w-1/2 h-[66vh] md:h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-container-low to-surface-container-highest opacity-50 mix-blend-overlay"></div>
       
@@ -158,11 +158,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         </div>
       )}
 
-      {/* Status Badge */}
-      <div className="absolute top-margin-edge right-margin-edge bg-surface-container/80 backdrop-blur-md border border-outline-variant px-3 py-1.5 rounded-full flex items-center gap-2 z-20">
-        <div className="w-2.5 h-2.5 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(42,229,0,0.8)]"></div>
-        <span className="font-label-md text-label-md text-on-surface">오프라인 준비 완료</span>
-      </div>
+
 
       {/* Scan Guide Overlay */}
       <div ref={guideRef} className="relative w-[85%] h-[35%] max-w-[400px] border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(42,229,0,0.15)] mt-[-10%]">
@@ -176,18 +172,10 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         {hasPermission && (
           <div className="absolute top-0 left-0 w-full h-[2px] bg-primary-container opacity-60 shadow-[0_0_10px_#39ff14] animate-scan"></div>
         )}
-        
-        <span className="font-label-md text-label-md text-primary-fixed-dim/70 bg-surface/50 px-3 py-1 rounded-full backdrop-blur-md">
-          박스 안에 텍스트를 맞춰주세요
-        </span>
       </div>
 
       {/* Camera Controls */}
       <div className="absolute bottom-margin-edge left-0 w-full flex justify-center items-center gap-8 z-20">
-        <button aria-label="플래시 토글" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
-          <span className="material-symbols-outlined">flashlight_on</span>
-        </button>
-        
         {/* Shutter Button */}
         {!isFrozen ? (
           <button 
@@ -219,10 +207,6 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
             </div>
           </button>
         )}
-        
-        <button aria-label="이미지 업로드" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
-          <span className="material-symbols-outlined">image</span>
-        </button>
       </div>
     </section>
   );

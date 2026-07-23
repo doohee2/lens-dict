@@ -112,7 +112,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
 
   return (
     <>
-      <section className={`flex-1 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 relative ${scannedTextBlock && !searchWord ? 'h-[85vh] md:h-full -mt-[35vh] md:mt-0' : 'translate-y-0'}`}>
+      <section className={`flex-1 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col md:rounded-none z-30 relative`}>
         {/* Mobile Puller Handle */}
         <div className="w-full flex justify-center pt-3 pb-2 md:hidden">
           <div className="w-12 h-1.5 bg-outline-variant rounded-full"></div>
