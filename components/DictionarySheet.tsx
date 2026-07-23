@@ -22,7 +22,7 @@ export default function DictionarySheet({ injectedSearchWord, onSearchWordChange
         
         const imgRegex = /src=["']([^"']+\.(?:jpg|gif))["']/gi;
         let match;
-        const matches = [];
+        const matches: string[] = [];
         
         while ((match = imgRegex.exec(def)) !== null) {
           if (!matches.includes(match[1])) {
