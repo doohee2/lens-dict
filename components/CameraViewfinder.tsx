@@ -168,7 +168,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
 
 
       {/* Scan Guide Overlay */}
-      <div ref={guideRef} className="absolute top-[22%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] h-[25%] max-w-[400px] border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(3,199,90,0.15)]">
+      <div ref={guideRef} className="absolute top-[20%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] h-[30%] max-w-[400px] border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(3,199,90,0.15)]">
         {/* Corner accents */}
         <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary-container rounded-tl-xl"></div>
         <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary-container rounded-tr-xl"></div>

@@ -142,7 +142,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
           {lines.map((line, i) => (
             <p 
               key={i} 
-              className="mb-2 font-bold text-on-surface leading-snug break-words max-w-full"
+              className="mb-2 font-extrabold tracking-tight text-on-surface leading-snug break-words max-w-full"
               style={{ fontSize: dynamicFontSize }}
             >
               {line.split(' ').map((word, j) => {
