@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/db';
-import SettingsModal from './SettingsModal';
 
 interface Props {
   scannedTextBlock: string;
@@ -12,7 +11,6 @@ interface Props {
 export default function DictionarySheet({ scannedTextBlock, onClearScannedText }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleSearch = async (wordToSearch: string) => {
     if (!wordToSearch) return;
@@ -112,7 +110,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
 
   return (
     <>
-      <section className={`flex-1 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col md:rounded-none z-30 relative`}>
+      <section className={`absolute md:static bottom-0 left-0 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 h-[45vh] md:h-full ${(scannedTextBlock || searchWord) ? 'translate-y-0' : 'translate-y-full'}`}>
         {/* Mobile Puller Handle */}
         <div className="w-full flex justify-center pt-3 pb-2 md:hidden">
           <div className="w-12 h-1.5 bg-outline-variant rounded-full"></div>
@@ -122,12 +120,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
           
           <div className="flex justify-between mb-2 shrink-0">
             <h2 className="text-xl font-bold text-on-surface">사전</h2>
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container text-on-surface-variant hover:text-primary-fixed transition-colors"
-            >
-              <span className="material-symbols-outlined">settings</span>
-            </button>
           </div>
 
           {/* Search Bar */}
@@ -192,8 +184,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
           )}
         </div>
       </section>
-
-      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
     </>
   );
 }
