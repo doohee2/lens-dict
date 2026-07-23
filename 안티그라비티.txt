@@ -1,0 +1,38 @@
+Lens Dictionary (단서 찾기 돋보기 앱) - 핵심 로직 통합 및 개발 마스터 프롬프트
+
+현재 프로젝트 ./lens-dict-design 폴더 내에는 스티치(Stitch)를 통해 미리 퍼블리싱된 React UI 컴포넌트(카메라 뷰어, 바텀 시트, 설정 모달 등)와 스타일링 파일들이 준비되어 있어. (※ 구체적인 UI 파일 경로와 컴포넌트명은 이 프롬프트 하단에 별도로 명시할게.)
+이 UI 뼈대를 바탕으로, 오프라인 우선(Offline-first) PWA 환경에서 동작하는 "단서 찾기 돋보기" 앱의 핵심 비즈니스 로직과 상태(State) 관리를 연결(Wiring)해 줘. 구현해야 할 단계별 마일스톤과 기술적 제약사항은 다음과 같아.
+
+[Phase 1: 로컬 사전 엔진 (StarDict + JSZip + Dexie.js)]
+가장 핵심이 되는 100MB 규모의 오프라인 사전 파싱 및 저장 로직을 먼저 구현해.
+사전 업로드: [⚙️ 사전 데이터 관리] 모달에서 사용자가 StarDict 포맷의 .zip 파일을 업로드할 수 있게 해 줘.
+로컬 파싱 (Web Worker): 브라우저 메인 스레드가 멈추지 않도록 Web Worker를 생성하고, jszip 라이브러리를 사용해 메모리 상에서 zip 파일을 압축 해제해 줘.
+idx 파일을 파싱하여 단어와 오프셋을 매핑하고, dict 파일에서 실제 데이터를 추출해 줘. (필요 시 euc-kr 등 인코딩 처리를 위해 TextDecoder 활용)
+IndexedDB 저장: 추출된 데이터(단어-뜻 쌍)를 Dexie.js를 이용해 대량(Bulk)으로 로컬 DB에 삽입(Insert)해 줘. 파싱 및 저장 진행률(Progress)을 UI에 상태값으로 전달해 줘.
+
+[Phase 2: iOS 호환 WebRTC 카메라 스트리밍]
+기존에 만들어진 카메라 뷰어 UI 컴포넌트에 navigator.mediaDevices.getUserMedia를 연결해 줘. 후면 카메라(environment)가 기본값이야.
+⚠️ iOS PWA 필수 제약사항: 카메라 권한은 반드시 사용자의 터치(버튼 클릭 등) 이벤트 이후에 요청하고, 렌더링되는 <video> 태그에는 반드시 autoPlay, playsInline, muted 속성을 강제 삽입해서 사파리 전체화면 플레이어로 튕기지 않게 해 줘.
+
+[Phase 3: 캔버스 크롭 및 Tesseract.js (OCR) 연동]
+사용자가 셔터 버튼을 누르면, 전체 비디오 화면이 아닌 화면 중앙의 '조준선(오버레이)' 영역만 <canvas>에 크롭하여 흑백/대비 전처리를 거친 뒤 이미지로 추출해 줘.
+추출된 이미지를 tesseract.js Web Worker로 보내 영어 텍스트를 인식해 줘.
+⚠️ iOS 메모리 최적화: Tesseract의 recognize 작업이 끝난 직후에는 반드시 worker.terminate()를 호출해 메모리를 비워 사파리 탭이 강제 종료(Crash)되는 것을 막아 줘.
+
+[Phase 4: 결과 렌더링 및 하이브리드 검색 처리]
+OCR로 텍스트가 추출되면 해당 단어 텍스트를 즉시 하단 '바텀 시트(Bottom Sheet)' 검색창 State에 업데이트해 줘.
+검색 로직 (우선순위):
+1순위: Dexie.js 로컬 DB를 먼저 쿼리(where('word').equals(검색어))하여 결과가 있으면 바텀 시트 결과창에 렌더링.
+2순위: 로컬 DB에 데이터가 없거나 사전을 세팅하지 않은 상태라면, [🌐 네이버 사전에서 보기] 버튼을 노출하고 클릭 시 https://dict.naver.com/search.dict?dicType=en&query={검색어} 로 이동(target="_blank")하도록 처리해 줘.
+
+[진행 지시 사항]
+먼저 100MB 이상의 StarDict 데이터를 파싱하기 위한 JSZip + Web Worker + Dexie.js 아키텍처(Phase 1)를 어떻게 설계할 것인지 브리핑해 줘. 내 승인이 떨어지면 Phase 1부터 코드 작성을 시작해 줘.
+
+[스타딕 사전 파일]
+./lens-dict-design/stardict/Dong-A_Prime_EKKE_Dictionary.zip : 샘플 사전 파일이야. 이 파일을 분석해서 브라우저 사전을 만들면 돼.
+
+[스티치 디자인 파일 설명]
+./lens-dict-design/lumen_vision/DESIGN.md
+./lens-dict-design/lens_dictionary_pwa_icon/screen.png : PWA 아이콘 디자인 이지미야. 이미지를 리사이즈해서 아이콘을 만들어줘.
+./lens-dict-design/lens_dictionary_pwa_icon/code.html : 반응형 웹 디자인 코드야.
+./lens-dict-design/lens_dictionary_pwa_icon/screen_mobile.png, screen_pc.png : 각각 모바일 환경과 PC 환경의 스크린 캡쳐야.
