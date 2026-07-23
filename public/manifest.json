@@ -1,6 +1,6 @@
 {
   "name": "OCR 단어 찾기",
-  "short_name": "OCR단어찾기",
+  "short_name": "OCR 단어 찾기",
   "description": "오프라인 카메라 OCR 영어 사전 PWA",
   "start_url": "/",
   "display": "standalone",

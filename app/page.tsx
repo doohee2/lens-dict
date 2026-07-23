@@ -5,19 +5,25 @@ import TopAppBar from '../components/TopAppBar';
 import CameraViewfinder from '../components/CameraViewfinder';
 import DictionarySheet from '../components/DictionarySheet';
 import SettingsModal from '../components/SettingsModal';
+import AboutModal from '../components/AboutModal';
 
 export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   return (
     <>
-      <TopAppBar onOpenSettings={() => setIsSettingsOpen(true)} />
+      <TopAppBar 
+        onOpenSettings={() => setIsSettingsOpen(true)} 
+        onOpenAbout={() => setIsAboutOpen(true)}
+      />
       <main className="flex-1 flex flex-col md:flex-row mt-[env(safe-area-inset-top,0px)] pt-[48px] md:pb-0 h-[100dvh] relative overflow-hidden">
         <CameraViewfinder onTextScanned={(text) => setGlobalOCRText(text)} />
         <DictionarySheet scannedTextBlock={globalOCRText} onClearScannedText={() => setGlobalOCRText('')} />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      {isAboutOpen && <AboutModal onClose={() => setIsAboutOpen(false)} />}
     </>
   );
 }

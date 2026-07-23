@@ -12,11 +12,11 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [sheetHeight, setSheetHeight] = useState(45);
-  const heightRef = useRef(45);
+  const [sheetHeight, setSheetHeight] = useState(65);
+  const heightRef = useRef(65);
 
   useEffect(() => {
-    const saved = localStorage.getItem('lensDictSheetHeight');
+    const saved = localStorage.getItem('lensDictSheetHeightV2');
     if (saved) {
       const h = Number(saved);
       setSheetHeight(h);
@@ -119,7 +119,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
       if (!dragged && Date.now() - startTime < 300) {
         setIsMinimized(prev => !prev);
       } else if (dragged) {
-        localStorage.setItem('lensDictSheetHeight', heightRef.current.toString());
+        localStorage.setItem('lensDictSheetHeightV2', heightRef.current.toString());
       }
     };
 
@@ -231,10 +231,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
                 href={`https://dict.naver.com/search.dict?dicType=en&query=${encodeURIComponent(searchWord)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center h-14 px-6 bg-transparent border-2 border-secondary-container text-secondary-container font-label-xl rounded-xl gap-2 hover:bg-secondary-container/10 transition-colors"
+                className="inline-flex items-center justify-center h-14 px-6 bg-[#03c75a] text-white font-bold text-[17px] rounded-xl gap-2 hover:bg-[#02b351] transition-colors shadow-md"
               >
-                <span className="material-symbols-outlined">language</span>
-                네이버 사전 검색
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
+                </svg>
+                네이버 사전
               </a>
             </div>
           ) : (
