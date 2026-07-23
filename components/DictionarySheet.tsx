@@ -190,18 +190,35 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             </div>
             <input 
               type="text"
-              className="block w-full pl-12 pr-12 py-3 bg-surface-container border border-outline-variant rounded-xl text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow" 
-              placeholder="스캔 텍스트에서 단어를 선택하거나 직접 입력하세요."
+              className="block w-full pl-12 pr-24 py-3 bg-surface-container border border-outline-variant rounded-xl text-base font-bold text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow" 
+              placeholder="단어를 선택하거나 직접 입력하세요."
               value={searchWord}
               onChange={(e) => setSearchWord(e.target.value)}
             />
             {searchWord && (
-              <button 
-                onClick={() => setSearchWord('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-on-surface-variant hover:text-on-surface"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
+              <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
+                <button 
+                  onClick={() => {
+                    if ('speechSynthesis' in window) {
+                      window.speechSynthesis.cancel();
+                      const utterance = new SpeechSynthesisUtterance(searchWord);
+                      utterance.lang = 'en-US';
+                      window.speechSynthesis.speak(utterance);
+                    }
+                  }}
+                  className="p-1.5 text-primary-fixed-dim hover:bg-primary-container rounded-full transition-colors flex items-center"
+                  aria-label="발음 듣기"
+                >
+                  <span className="material-symbols-outlined text-[22px]">volume_up</span>
+                </button>
+                <button 
+                  onClick={() => setSearchWord('')}
+                  className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors flex items-center"
+                  aria-label="지우기"
+                >
+                  <span className="material-symbols-outlined text-[22px]">close</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -242,7 +259,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center text-on-surface-variant opacity-50 min-h-[200px]">
-              <p>스캔 텍스트에서 단어를 선택하거나 직접 입력하세요</p>
+              <p>단어를 선택하거나 직접 입력하세요</p>
             </div>
           )}
         </div>
