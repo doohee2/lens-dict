@@ -12,6 +12,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [status, setStatus] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [dictSize, setDictSize] = useState<number | null>(null);
+  const [dictName, setDictName] = useState<string | null>(null);
   
   const workerRef = useRef<Worker | null>(null);
 
@@ -35,6 +36,7 @@ export default function SettingsModal({ onClose }: Props) {
     };
 
     checkDictSize();
+    setDictName(localStorage.getItem('lensDictName'));
 
     return () => {
       workerRef.current?.terminate();
@@ -58,6 +60,9 @@ export default function SettingsModal({ onClose }: Props) {
       setIsParsing(true);
       setProgress(0);
       setStatus('파싱을 시작합니다...');
+      const name = file.name.replace('.zip', '');
+      localStorage.setItem('lensDictName', name);
+      setDictName(name);
       workerRef.current?.postMessage({ type: 'PARSE_DICT', payload: file });
     } else {
       alert('StarDict 파일이 포함된 .zip 파일을 업로드해주세요.');
@@ -69,6 +74,8 @@ export default function SettingsModal({ onClose }: Props) {
     
     await db.dictionary.clear();
     await db.resources.clear();
+    localStorage.removeItem('lensDictName');
+    setDictName(null);
     setDictSize(0);
     setStatus('사전 데이터가 삭제되었습니다.');
     setProgress(0);
@@ -84,12 +91,33 @@ export default function SettingsModal({ onClose }: Props) {
           <span className="material-symbols-outlined">close</span>
         </button>
         
-        <h2 className="text-2xl font-bold text-primary-fixed mb-6 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-primary-fixed-dim mb-6 flex items-center gap-2">
           <span className="material-symbols-outlined">database</span>
           사전 데이터 관리
         </h2>
         
         <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3 bg-surface-container-high p-4 rounded-xl border border-outline-variant/30">
+            <div className="flex justify-between items-center">
+              <p className="text-on-surface">현재 로딩된 사전</p>
+              <p className="font-bold text-primary-fixed-dim">{dictName || '없음'}</p>
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-on-surface">총 단어 수</p>
+              <div className="flex items-center gap-4">
+                <span className="font-bold text-primary-fixed-dim">
+                  {dictSize !== null ? dictSize.toLocaleString() : '로딩 중...'}
+                </span>
+                <button 
+                  onClick={clearDictionary}
+                  className="px-3 py-1.5 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold whitespace-nowrap"
+                >
+                  로컬 사전 삭제
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/50">
             <h3 className="font-semibold text-on-surface mb-2">스타딕(zip) 파일을 기본 사전으로 로컬 저장</h3>
             <input 
@@ -109,25 +137,15 @@ export default function SettingsModal({ onClose }: Props) {
           {isParsing && (
             <div className="px-2">
               <div className="w-full bg-surface-container-highest rounded-full h-2.5 mb-2 overflow-hidden">
-                <div className="bg-primary-fixed h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                <div className="bg-primary-fixed-dim h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
               </div>
               <p className="text-sm text-on-surface-variant font-medium">{status}</p>
             </div>
           )}
 
           {!isParsing && status && (
-            <p className="text-sm text-primary-fixed font-medium px-2">{status}</p>
+            <p className="text-sm text-primary-fixed-dim font-medium px-2">{status}</p>
           )}
-
-          <div className="flex justify-between items-center bg-surface-container-high p-4 rounded-xl border border-outline-variant/30">
-            <p className="text-on-surface">총 단어 수: <span className="font-bold text-primary-fixed ml-2">{dictSize !== null ? dictSize : '로딩 중...'}</span></p>
-            <button 
-              onClick={clearDictionary}
-              className="px-4 py-2 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold"
-            >
-              로컬 사전 삭제
-            </button>
-          </div>
         </div>
       </div>
     </div>

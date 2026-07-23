@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
 
 interface Props {
@@ -12,6 +12,17 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [sheetHeight, setSheetHeight] = useState(45);
+  const heightRef = useRef(45);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('lensDictSheetHeight');
+    if (saved) {
+      const h = Number(saved);
+      setSheetHeight(h);
+      heightRef.current = h;
+    }
+  }, []);
 
   const handleSearch = async (wordToSearch: string) => {
     if (!wordToSearch) return;
@@ -79,6 +90,43 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     return 'text-xs leading-tight';
   };
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const startY = e.clientY;
+    const startTime = Date.now();
+    let dragged = false;
+
+    document.body.style.userSelect = 'none';
+    document.body.style.touchAction = 'none';
+    
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (Math.abs(moveEvent.clientY - startY) > 10) dragged = true;
+      if (dragged) {
+        if (isMinimized) setIsMinimized(false);
+        const newHeight = ((window.innerHeight - moveEvent.clientY) / window.innerHeight) * 100;
+        if (newHeight >= 15 && newHeight <= 90) {
+          setSheetHeight(newHeight);
+          heightRef.current = newHeight;
+        }
+      }
+    };
+
+    const handlePointerUp = () => {
+      document.body.style.userSelect = '';
+      document.body.style.touchAction = '';
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      
+      if (!dragged && Date.now() - startTime < 300) {
+        setIsMinimized(prev => !prev);
+      } else if (dragged) {
+        localStorage.setItem('lensDictSheetHeight', heightRef.current.toString());
+      }
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+  };
+
   const renderTextBlock = (text: string) => {
     const dynamicSizeClass = getDynamicTextSizeClass(text.length);
     
@@ -119,11 +167,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
 
   return (
     <>
-      <section className={`absolute md:static bottom-0 left-0 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 h-[45vh] md:h-full ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}>
+      <section 
+        className={`absolute md:static bottom-0 left-0 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 md:h-full ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
+        style={{ height: `${sheetHeight}vh` }}
+      >
         {/* Mobile Puller Handle */}
         <div 
-          className="w-full flex justify-center pt-3 pb-3 md:hidden cursor-pointer"
-          onClick={() => setIsMinimized(!isMinimized)}
+          className="w-full flex justify-center pt-3 pb-3 md:hidden cursor-grab active:cursor-grabbing touch-none"
+          onPointerDown={handlePointerDown}
         >
           <div className="w-12 h-1.5 bg-outline-variant rounded-full pointer-events-none"></div>
         </div>
