@@ -43,7 +43,7 @@ export default function AboutModal({ onClose }: Props) {
         </div>
         
         {/* Description */}
-        <div className="text-on-surface text-center leading-relaxed mb-6 break-keep px-2 text-[15px]">
+        <div className="text-on-surface text-left leading-relaxed mb-6 break-keep px-2 text-[15px]">
           {APP_INFO.description}
         </div>
         
