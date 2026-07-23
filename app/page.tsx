@@ -7,14 +7,14 @@ import DictionarySheet from '../components/DictionarySheet';
 import BottomNavBar from '../components/BottomNavBar';
 
 export default function Home() {
-  const [globalSearchWord, setGlobalSearchWord] = useState('');
+  const [globalOCRText, setGlobalOCRText] = useState('');
 
   return (
     <>
       <TopAppBar />
       <main className="flex-1 flex flex-col md:flex-row mt-[env(safe-area-inset-top,0px)] pt-[48px] pb-[80px] md:pb-0 h-[100dvh] relative overflow-hidden">
-        <CameraViewfinder onTextScanned={(text) => setGlobalSearchWord(text)} />
-        <DictionarySheet injectedSearchWord={globalSearchWord} onSearchWordChange={setGlobalSearchWord} />
+        <CameraViewfinder onTextScanned={(text) => setGlobalOCRText(text)} />
+        <DictionarySheet scannedTextBlock={globalOCRText} onClearScannedText={() => setGlobalOCRText('')} />
       </main>
       <BottomNavBar />
     </>

@@ -104,7 +104,8 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         const { data: { text } } = await worker.recognize(dataUrl);
         await worker.terminate(); // CRITICAL: Prevent Safari memory crash
         
-        const cleanText = text.trim().replace(/[^a-zA-Z0-9- ]/g, '').split('\n')[0];
+        // Preserve newlines for full block OCR
+        const cleanText = text.trim();
         if (cleanText && onTextScanned) {
           onTextScanned(cleanText);
         }
@@ -145,13 +146,13 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       {!hasPermission && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-sm">
           <p className="text-on-surface mb-4 font-body-lg text-center px-4">
-            Camera access is required to scan text.
+            텍스트를 스캔하려면 카메라 접근 권한이 필요합니다.
           </p>
           <button
             onClick={startCamera}
             className="px-6 py-3 bg-primary-container text-on-primary-container rounded-full font-label-xl shadow-[0_0_15px_rgba(57,255,20,0.3)] hover:scale-105 transition-transform"
           >
-            Start Camera
+            카메라 시작
           </button>
           {errorMsg && <p className="text-error mt-4">{errorMsg}</p>}
         </div>
@@ -160,11 +161,11 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       {/* Status Badge */}
       <div className="absolute top-margin-edge right-margin-edge bg-surface-container/80 backdrop-blur-md border border-outline-variant px-3 py-1.5 rounded-full flex items-center gap-2 z-20">
         <div className="w-2.5 h-2.5 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(42,229,0,0.8)]"></div>
-        <span className="font-label-md text-label-md text-on-surface">Offline Ready</span>
+        <span className="font-label-md text-label-md text-on-surface">오프라인 준비 완료</span>
       </div>
 
       {/* Scan Guide Overlay */}
-      <div ref={guideRef} className="relative w-3/4 max-w-[300px] aspect-square border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(42,229,0,0.15)]">
+      <div ref={guideRef} className="relative w-[90%] h-[75%] border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(42,229,0,0.15)] mt-[-10%]">
         {/* Corner accents */}
         <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary-container rounded-tl-xl"></div>
         <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary-container rounded-tr-xl"></div>
@@ -177,20 +178,20 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         )}
         
         <span className="font-label-md text-label-md text-primary-fixed-dim/70 bg-surface/50 px-3 py-1 rounded-full backdrop-blur-md">
-          Align text within frame
+          박스 안에 텍스트를 맞춰주세요
         </span>
       </div>
 
       {/* Camera Controls */}
       <div className="absolute bottom-margin-edge left-0 w-full flex justify-center items-center gap-8 z-20">
-        <button aria-label="Toggle Flash" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
+        <button aria-label="플래시 토글" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
           <span className="material-symbols-outlined">flashlight_on</span>
         </button>
         
         {/* Shutter Button */}
         {!isFrozen ? (
           <button 
-            aria-label="Capture Text" 
+            aria-label="텍스트 스캔" 
             onClick={captureAndScan}
             disabled={isScanning || !hasPermission}
             className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 group
@@ -209,7 +210,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
           </button>
         ) : (
           <button 
-            aria-label="Retake" 
+            aria-label="재촬영" 
             onClick={retake}
             className="w-20 h-20 rounded-full border-4 border-error flex items-center justify-center bg-surface-container-highest shadow-[0_0_20px_rgba(186,26,26,0.2)] hover:scale-95 transition-transform duration-100 group"
           >
@@ -219,7 +220,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
           </button>
         )}
         
-        <button aria-label="Upload Image" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
+        <button aria-label="이미지 업로드" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
           <span className="material-symbols-outlined">image</span>
         </button>
       </div>
