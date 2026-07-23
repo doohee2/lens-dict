@@ -111,12 +111,14 @@ export default function SettingsModal({ onClose }: Props) {
                 <span className="font-bold text-primary-fixed-dim">
                   {dictSize !== null ? dictSize.toLocaleString() : '로딩 중...'}
                 </span>
-                <button 
-                  onClick={clearDictionary}
-                  className="px-3 py-1.5 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold whitespace-nowrap"
-                >
-                  로컬 사전 삭제
-                </button>
+                {!!dictName && (
+                  <button 
+                    onClick={clearDictionary}
+                    className="px-3 py-1.5 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold whitespace-nowrap"
+                  >
+                    사전 삭제
+                  </button>
+                )}
               </div>
             </div>
           </div>

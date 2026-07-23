@@ -130,7 +130,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     return (
       <div className="bg-surface-container-lowest p-6 rounded-2xl overflow-y-auto w-full text-left shadow-inner border border-outline-variant/30 flex-1 flex flex-col justify-center @container">
         <div className="flex justify-between items-center mb-4 shrink-0">
-          <h3 className="font-bold text-primary-fixed-dim">스캔된 텍스트 (단어를 탭하세요)</h3>
+          <h3 className="font-bold text-primary-fixed-dim">OCR 스캔 텍스트 (단어 탭하여 선택)</h3>
           <button 
             onClick={onClearScannedText}
             className="text-on-surface-variant hover:text-error transition-colors"
