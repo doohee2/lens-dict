@@ -82,13 +82,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     }
   }, [searchWord]);
 
-  const getDynamicTextSizeClass = (textLength: number) => {
-    if (textLength < 40) return 'text-xl leading-tight';
-    if (textLength < 80) return 'text-lg leading-tight';
-    if (textLength < 150) return 'text-base leading-tight';
-    if (textLength < 300) return 'text-sm leading-tight';
-    return 'text-xs leading-tight';
-  };
+  // Dynamic text size logic is now handled inline via cqw (container queries) based on max line length.
 
   const handlePointerDown = (e: React.PointerEvent) => {
     const startY = e.clientY;
@@ -128,10 +122,13 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   };
 
   const renderTextBlock = (text: string) => {
-    const dynamicSizeClass = getDynamicTextSizeClass(text.length);
+    const lines = text.split('\n');
+    const maxLineLength = Math.max(...lines.map(l => l.trim().length), 10);
+    // Average char width ~ 0.55em. To fill 80% width: fontSize = 80cqw / (len * 0.55) ≈ 145cqw / len
+    const dynamicFontSize = `clamp(14px, calc(145cqw / ${maxLineLength}), 40px)`;
     
     return (
-      <div className="bg-surface-container-lowest p-6 rounded-2xl overflow-y-auto w-full text-left shadow-inner border border-outline-variant/30 flex-1 flex flex-col justify-center">
+      <div className="bg-surface-container-lowest p-6 rounded-2xl overflow-y-auto w-full text-left shadow-inner border border-outline-variant/30 flex-1 flex flex-col justify-center @container">
         <div className="flex justify-between items-center mb-4 shrink-0">
           <h3 className="font-bold text-primary-fixed-dim">스캔된 텍스트 (단어를 탭하세요)</h3>
           <button 
@@ -141,9 +138,13 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             <span className="material-symbols-outlined">delete</span>
           </button>
         </div>
-        <div className="flex-1 flex flex-col justify-center items-start text-left">
-          {text.split('\n').map((line, i) => (
-            <p key={i} className={`mb-1 font-body-lg text-on-surface ${dynamicSizeClass}`}>
+        <div className="flex-1 flex flex-col justify-center items-start text-left w-full">
+          {lines.map((line, i) => (
+            <p 
+              key={i} 
+              className="mb-2 font-bold text-on-surface leading-snug break-words max-w-full"
+              style={{ fontSize: dynamicFontSize }}
+            >
               {line.split(' ').map((word, j) => {
                 const cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
                 return (
