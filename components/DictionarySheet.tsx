@@ -128,8 +128,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     const dynamicFontSize = `clamp(14px, calc(145cqw / ${maxLineLength}), 40px)`;
     
     return (
-      <div className="bg-surface-container-lowest p-6 rounded-2xl overflow-y-auto w-full text-left shadow-inner border border-outline-variant/30 flex-1 flex flex-col justify-center @container">
-        <div className="flex justify-between items-center mb-4 shrink-0">
+      <div className="bg-surface-container-lowest p-6 rounded-2xl w-full text-left shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-outline-variant/30 flex-1 flex flex-col overflow-hidden @container">
+        <div className="flex justify-between items-center mb-4 pb-3 border-b border-outline-variant/50 shrink-0">
           <h3 className="font-bold text-primary-fixed-dim">OCR 스캔 텍스트 (단어 탭하여 선택)</h3>
           <button 
             onClick={onClearScannedText}
@@ -138,13 +138,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             <span className="material-symbols-outlined">delete</span>
           </button>
         </div>
-        <div className="flex-1 flex flex-col justify-center items-start text-left w-full">
-          {lines.map((line, i) => (
-            <p 
-              key={i} 
-              className="mb-2 font-extrabold tracking-tight text-on-surface leading-snug break-words max-w-full"
-              style={{ fontSize: dynamicFontSize }}
-            >
+        <div className="flex-1 overflow-auto w-full">
+          <div className="flex flex-col justify-start items-start text-left min-w-max pb-4 pr-4">
+            {lines.map((line, i) => (
+              <p 
+                key={i} 
+                className="mb-2 font-extrabold tracking-tight text-on-surface leading-snug whitespace-nowrap"
+                style={{ fontSize: dynamicFontSize }}
+              >
               {line.split(' ').map((word, j) => {
                 const cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
                 return (
@@ -160,7 +161,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
                 );
               })}
             </p>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
