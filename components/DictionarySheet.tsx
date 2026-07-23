@@ -65,11 +65,11 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   }, [scannedTextBlock]);
 
   const getDynamicTextSizeClass = (textLength: number) => {
-    if (textLength < 40) return 'text-4xl leading-relaxed';
-    if (textLength < 80) return 'text-3xl leading-relaxed';
-    if (textLength < 150) return 'text-2xl leading-loose';
-    if (textLength < 300) return 'text-xl leading-loose';
-    return 'text-lg leading-loose';
+    if (textLength < 40) return 'text-xl leading-tight';
+    if (textLength < 80) return 'text-lg leading-tight';
+    if (textLength < 150) return 'text-base leading-tight';
+    if (textLength < 300) return 'text-sm leading-tight';
+    return 'text-xs leading-tight';
   };
 
   const renderTextBlock = (text: string) => {
@@ -86,9 +86,9 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             <span className="material-symbols-outlined">delete</span>
           </button>
         </div>
-        <div className="flex-1 flex flex-col justify-center items-center text-center">
+        <div className="flex-1 flex flex-col justify-center items-start text-left">
           {text.split('\n').map((line, i) => (
-            <p key={i} className={`mb-3 font-body-lg text-on-surface ${dynamicSizeClass}`}>
+            <p key={i} className={`mb-1 font-body-lg text-on-surface ${dynamicSizeClass}`}>
               {line.split(' ').map((word, j) => {
                 const cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
                 return (
