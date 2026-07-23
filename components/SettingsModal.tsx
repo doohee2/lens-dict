@@ -98,9 +98,12 @@ export default function SettingsModal({ onClose }: Props) {
         
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3 bg-surface-container-high p-4 rounded-xl border border-outline-variant/30">
-            <div className="flex justify-between items-center">
-              <p className="text-on-surface">현재 로딩된 사전</p>
-              <p className="font-bold text-primary-fixed-dim">{dictName || '없음'}</p>
+            <div className="flex justify-between items-center w-full">
+              {dictName ? (
+                <p className="font-bold text-primary-fixed-dim text-lg w-full text-center py-2">{dictName}</p>
+              ) : (
+                <p className="text-on-surface-variant w-full text-center py-2">현재 로컬에 저장된 사전 없음</p>
+              )}
             </div>
             <div className="flex justify-between items-center">
               <p className="text-on-surface">총 단어 수</p>
@@ -119,7 +122,7 @@ export default function SettingsModal({ onClose }: Props) {
           </div>
 
           <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/50">
-            <h3 className="font-semibold text-on-surface mb-2">스타딕(zip) 파일을 기본 사전으로 로컬 저장</h3>
+            <h3 className="font-semibold text-on-surface mb-2">스타딕(zip) 파일을 기존 사전으로 저장</h3>
             <input 
               type="file" 
               accept=".zip" 
