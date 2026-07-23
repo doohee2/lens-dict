@@ -14,6 +14,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
+  const [isFrozen, setIsFrozen] = useState(false);
 
   const startCamera = async () => {
     try {
@@ -22,7 +23,9 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play();
         setHasPermission(true);
+        setIsFrozen(false);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Camera access denied');
@@ -41,11 +44,14 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   }, []);
 
   const captureAndScan = async () => {
-    if (!videoRef.current || !guideRef.current || !containerRef.current) return;
+    if (!videoRef.current || !guideRef.current || !containerRef.current || isFrozen) return;
     
     setIsScanning(true);
     try {
       const video = videoRef.current;
+      video.pause(); // Freeze the camera stream
+      setIsFrozen(true);
+      
       const guide = guideRef.current.getBoundingClientRect();
       const container = containerRef.current.getBoundingClientRect();
       
@@ -105,13 +111,24 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       }
     } catch (e) {
       console.error('OCR Error:', e);
+      // If error, unfreeze automatically
+      if (videoRef.current) videoRef.current.play();
+      setIsFrozen(false);
     } finally {
       setIsScanning(false);
     }
   };
 
+  const retake = () => {
+    if (videoRef.current) {
+      videoRef.current.play();
+      setIsFrozen(false);
+      if (onTextScanned) onTextScanned('');
+    }
+  };
+
   return (
-    <section ref={containerRef} className="w-full md:w-1/2 h-[45vh] md:h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
+    <section ref={containerRef} className="w-full md:w-1/2 h-[40vh] md:h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-container-low to-surface-container-highest opacity-50 mix-blend-overlay"></div>
       
@@ -171,24 +188,36 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         </button>
         
         {/* Shutter Button */}
-        <button 
-          aria-label="Capture Text" 
-          onClick={captureAndScan}
-          disabled={isScanning || !hasPermission}
-          className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 group
-            ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_20px_rgba(57,255,20,0.2)] hover:scale-95'}
-          `}
-        >
-          <div className={`w-16 h-16 rounded-full transition-colors flex items-center justify-center
-            ${isScanning ? 'bg-primary-container animate-pulse' : 'bg-primary-container/20 group-hover:bg-primary-container/40'}
-          `}>
-            {isScanning ? (
-              <span className="material-symbols-outlined text-[32px] text-on-primary-container animate-spin">sync</span>
-            ) : (
-              <span className="material-symbols-outlined text-[32px] text-primary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>camera</span>
-            )}
-          </div>
-        </button>
+        {!isFrozen ? (
+          <button 
+            aria-label="Capture Text" 
+            onClick={captureAndScan}
+            disabled={isScanning || !hasPermission}
+            className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 group
+              ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_20px_rgba(57,255,20,0.2)] hover:scale-95'}
+            `}
+          >
+            <div className={`w-16 h-16 rounded-full transition-colors flex items-center justify-center
+              ${isScanning ? 'bg-primary-container animate-pulse' : 'bg-primary-container/20 group-hover:bg-primary-container/40'}
+            `}>
+              {isScanning ? (
+                <span className="material-symbols-outlined text-[32px] text-on-primary-container animate-spin">sync</span>
+              ) : (
+                <span className="material-symbols-outlined text-[32px] text-primary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>camera</span>
+              )}
+            </div>
+          </button>
+        ) : (
+          <button 
+            aria-label="Retake" 
+            onClick={retake}
+            className="w-20 h-20 rounded-full border-4 border-error flex items-center justify-center bg-surface-container-highest shadow-[0_0_20px_rgba(186,26,26,0.2)] hover:scale-95 transition-transform duration-100 group"
+          >
+            <div className="w-16 h-16 rounded-full bg-error/20 group-hover:bg-error/40 transition-colors flex items-center justify-center">
+              <span className="material-symbols-outlined text-[32px] text-error">refresh</span>
+            </div>
+          </button>
+        )}
         
         <button aria-label="Upload Image" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors">
           <span className="material-symbols-outlined">image</span>

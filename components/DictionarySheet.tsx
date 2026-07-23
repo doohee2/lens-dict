@@ -110,7 +110,7 @@ export default function DictionarySheet({ injectedSearchWord, onSearchWordChange
               <div className="h-px w-full bg-outline-variant/50 my-2"></div>
               
               <div 
-                className="text-body-lg text-on-surface leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
+                className="text-sm md:text-base text-on-surface leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
                 dangerouslySetInnerHTML={{ __html: testResult.definition }}
               ></div>
             </article>
