@@ -12,7 +12,7 @@ const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  navigationPreload: false,
   runtimeCaching: [
     {
       matcher: /\.(?:js|css|woff2?|eot|ttf|otf|png|jpg|jpeg|gif|webp|svg|ico)$/i,
@@ -43,6 +43,12 @@ const serwist = new Serwist({
       handler: new NetworkFirst({
         cacheName: "api-calls",
         networkTimeoutSeconds: 5,
+      }),
+    },
+    {
+      matcher: /.*/i,
+      handler: new StaleWhileRevalidate({
+        cacheName: "fallback-catch-all",
       }),
     }
   ],

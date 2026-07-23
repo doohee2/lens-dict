@@ -184,14 +184,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
           
 
           {/* Search Bar */}
-          <div className="relative w-full mb-4 shrink-0">
+          <div className="relative w-full mb-2 shrink-0">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <span className="material-symbols-outlined text-primary-fixed-dim">search</span>
             </div>
             <input 
               type="text"
-              className="block w-full pl-12 pr-12 py-4 bg-surface-container border border-outline-variant rounded-xl text-body-lg font-body-lg text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow" 
-              placeholder="단어를 입력하거나 스캔하세요..."
+              className="block w-full pl-12 pr-12 py-3 bg-surface-container border border-outline-variant rounded-xl text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow" 
+              placeholder="스캔 텍스트에서 단어를 선택하거나 직접 입력하세요."
               value={searchWord}
               onChange={(e) => setSearchWord(e.target.value)}
             />
@@ -242,7 +242,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center text-on-surface-variant opacity-50 min-h-[200px]">
-              <p>단어를 입력하거나 텍스트를 스캔하세요</p>
+              <p>스캔 텍스트에서 단어를 선택하거나 직접 입력하세요</p>
             </div>
           )}
         </div>
