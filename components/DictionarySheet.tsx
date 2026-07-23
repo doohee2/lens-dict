@@ -11,6 +11,7 @@ interface Props {
 export default function DictionarySheet({ scannedTextBlock, onClearScannedText }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const handleSearch = async (wordToSearch: string) => {
     if (!wordToSearch) return;
@@ -59,8 +60,16 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   useEffect(() => {
     if (scannedTextBlock) {
       setSearchWord('');
+      setIsMinimized(false);
     }
   }, [scannedTextBlock]);
+
+  // When a word is searched manually, pop up the sheet
+  useEffect(() => {
+    if (searchWord) {
+      setIsMinimized(false);
+    }
+  }, [searchWord]);
 
   const getDynamicTextSizeClass = (textLength: number) => {
     if (textLength < 40) return 'text-xl leading-tight';
@@ -110,17 +119,17 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
 
   return (
     <>
-      <section className={`absolute md:static bottom-0 left-0 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 h-[45vh] md:h-full ${(scannedTextBlock || searchWord) ? 'translate-y-0' : 'translate-y-full'}`}>
+      <section className={`absolute md:static bottom-0 left-0 w-full md:w-1/2 bg-surface/95 backdrop-blur-3xl md:border-l border-outline-variant flex flex-col rounded-t-[32px] md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none z-30 transition-transform duration-300 h-[45vh] md:h-full ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}>
         {/* Mobile Puller Handle */}
-        <div className="w-full flex justify-center pt-3 pb-2 md:hidden">
-          <div className="w-12 h-1.5 bg-outline-variant rounded-full"></div>
+        <div 
+          className="w-full flex justify-center pt-3 pb-3 md:hidden cursor-pointer"
+          onClick={() => setIsMinimized(!isMinimized)}
+        >
+          <div className="w-12 h-1.5 bg-outline-variant rounded-full pointer-events-none"></div>
         </div>
         
         <div className="flex-1 overflow-y-auto px-margin-edge py-stack-md flex flex-col gap-container-gap">
           
-          <div className="flex justify-between mb-2 shrink-0">
-            <h2 className="text-xl font-bold text-on-surface">사전</h2>
-          </div>
 
           {/* Search Bar */}
           <div className="relative w-full mb-4 shrink-0">

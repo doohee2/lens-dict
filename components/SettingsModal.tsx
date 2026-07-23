@@ -65,6 +65,8 @@ export default function SettingsModal({ onClose }: Props) {
   };
 
   const clearDictionary = async () => {
+    if (!window.confirm('정말로 로컬 사전 데이터를 모두 삭제하시겠습니까?')) return;
+    
     await db.dictionary.clear();
     await db.resources.clear();
     setDictSize(0);
@@ -89,7 +91,7 @@ export default function SettingsModal({ onClose }: Props) {
         
         <div className="flex flex-col gap-6">
           <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/50">
-            <h3 className="font-semibold text-on-surface mb-2">1. StarDict Zip 업로드</h3>
+            <h3 className="font-semibold text-on-surface mb-2">스타딕(zip) 파일을 기본 사전으로 로컬 저장</h3>
             <input 
               type="file" 
               accept=".zip" 
@@ -123,7 +125,7 @@ export default function SettingsModal({ onClose }: Props) {
               onClick={clearDictionary}
               className="px-4 py-2 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold"
             >
-              DB 초기화
+              로컬 사전 삭제
             </button>
           </div>
         </div>

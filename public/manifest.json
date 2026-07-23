@@ -1,7 +1,7 @@
 {
-  "name": "Lens Dictionary",
-  "short_name": "LensDict",
-  "description": "Offline-first PWA English Dictionary with Camera OCR",
+  "name": "OCR 단어 찾기",
+  "short_name": "OCR단어찾기",
+  "description": "오프라인 카메라 OCR 영어 사전 PWA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8f9fa",

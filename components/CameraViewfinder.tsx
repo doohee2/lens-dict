@@ -168,7 +168,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
 
 
       {/* Scan Guide Overlay */}
-      <div ref={guideRef} className="relative w-[85%] h-[35%] max-w-[400px] border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(42,229,0,0.15)] mt-[-10%]">
+      <div ref={guideRef} className="relative w-[85%] h-[35%] max-w-[400px] border-2 border-primary-fixed-dim rounded-2xl flex items-center justify-center z-10 shadow-[0_0_30px_rgba(3,199,90,0.15)] mt-[-10%]">
         {/* Corner accents */}
         <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary-container rounded-tl-xl"></div>
         <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary-container rounded-tr-xl"></div>
@@ -177,7 +177,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         
         {/* Scanning animation line */}
         {hasPermission && (
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-primary-container opacity-60 shadow-[0_0_10px_#39ff14] animate-scan"></div>
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-primary-container opacity-60 shadow-[0_0_10px_#03C75A] animate-scan"></div>
         )}
       </div>
 
@@ -190,7 +190,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
             onClick={captureAndScan}
             disabled={isScanning || !hasPermission}
             className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 group
-              ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_20px_rgba(57,255,20,0.2)] hover:scale-95'}
+              ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_20px_rgba(3,199,90,0.2)] hover:scale-95'}
             `}
           >
             <div className={`w-16 h-16 rounded-full transition-colors flex items-center justify-center

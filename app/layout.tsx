@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lens Dictionary",
-  description: "Offline-first PWA English Dictionary with Camera OCR",
+  title: "OCR 단어 찾기",
+  description: "오프라인 카메라 OCR 영어 사전 PWA",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Lens Dictionary",
+    title: "OCR 단어 찾기",
   },
 };
 
