@@ -143,7 +143,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             {lines.map((line, i) => (
               <p 
                 key={i} 
-                className="mb-2 font-extrabold tracking-tight text-on-surface leading-snug whitespace-nowrap"
+                className="mb-2 font-[family-name:RIDIBatang] font-extrabold tracking-tight text-on-surface leading-snug whitespace-nowrap"
                 style={{ fontSize: dynamicFontSize }}
               >
               {line.split(' ').map((word, j) => {
@@ -227,19 +227,19 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
           {scannedTextBlock && !searchWord ? (
             renderTextBlock(scannedTextBlock)
           ) : testResult ? (
-            <article className="bg-surface-container-low border border-outline-variant rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4">
+            <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
               
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="font-display-mobile text-display-mobile text-on-surface tracking-tight">{testResult.word}</h2>
+                  <h2 className="font-display-mobile text-display-mobile text-gray-900 tracking-tight">{testResult.word}</h2>
                 </div>
               </div>
               
-              <div className="h-px w-full bg-outline-variant/50 my-2"></div>
+              <div className="h-px w-full bg-gray-200 my-2"></div>
               
               <div 
-                className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
+                className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
                 dangerouslySetInnerHTML={{ __html: testResult.definition }}
               ></div>
             </article>

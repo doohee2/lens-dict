@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'RIDIBatang';
+  src: url('/fonts/RIDIBatang.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
 @theme {
   --color-surface: #f8f9fa;
   --color-surface-dim: #dedede;
@@ -83,6 +90,28 @@
   --text-body-md: 16px;
 }
 
+.dark {
+  --color-surface: #121212;
+  --color-surface-dim: #212121;
+  --color-surface-bright: #303030;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-low: #1c1c1c;
+  --color-surface-container: #212121;
+  --color-surface-container-high: #2b2b2b;
+  --color-surface-container-highest: #333333;
+  
+  --color-on-surface: #e1e1e1;
+  --color-on-surface-variant: #b0b0b0;
+  --color-inverse-surface: #e1e1e1;
+  --color-inverse-on-surface: #121212;
+  
+  --color-outline: #8c8c8c;
+  --color-outline-variant: #4a4a4a;
+  
+  --color-background: #121212;
+  --color-on-background: #e1e1e1;
+}
+
 body {
   background-color: var(--color-surface);
   color: var(--color-on-surface);
@@ -103,10 +132,10 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 4px; }
 
 @keyframes scan {
-  0% { transform: translateY(0); opacity: 0; }
+  0% { top: 0%; opacity: 0; }
   10% { opacity: 1; }
   90% { opacity: 1; }
-  100% { transform: translateY(280px); opacity: 0; }
+  100% { top: 100%; opacity: 0; }
 }
 
 @utility animate-scan {

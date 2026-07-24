@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNetworkStatus } from '../lib/useNetworkStatus';
 
 interface Props {
@@ -8,6 +8,30 @@ interface Props {
 
 export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
   const isOnline = useNetworkStatus();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 w-full flex justify-between items-center px-margin-edge h-touch-min bg-surface/80 backdrop-blur-xl border-b border-outline-variant z-50 pt-safe">
@@ -30,6 +54,9 @@ export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
             <span className="material-symbols-outlined text-lg">cloud_off</span>
           </div>
         )}
+        <button onClick={toggleTheme} aria-label="테마 전환" className="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-full">
+          <span className="material-symbols-outlined">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+        </button>
         <button onClick={onOpenSettings} aria-label="설정" className="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-full">
           <span className="material-symbols-outlined">settings</span>
         </button>
