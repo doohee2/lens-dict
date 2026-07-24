@@ -52,7 +52,7 @@ export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full flex justify-between items-center px-margin-edge h-touch-min bg-surface/80 backdrop-blur-xl border-b border-outline-variant z-50 pt-safe">
+    <header className="fixed top-0 left-0 w-full flex justify-between items-center px-margin-edge bg-surface/80 backdrop-blur-xl border-b border-outline-variant z-50 pt-[calc(env(safe-area-inset-top,0px))] pb-1 min-h-[calc(48px+env(safe-area-inset-top,0px))]">
       <div 
         className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         onClick={onOpenAbout}
