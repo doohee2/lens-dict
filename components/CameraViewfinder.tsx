@@ -185,7 +185,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       </div>
 
       {/* Camera Controls */}
-      <div className="absolute top-[40%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
+      <div className="absolute top-[60%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
         {/* Shutter Button */}
         {!isFrozen ? (
           <button 

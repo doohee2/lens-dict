@@ -11,13 +11,17 @@ export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const updateMetaThemeColor = (isDark: boolean) => {
-    let meta = document.querySelector('meta[name="theme-color"]');
-    if (!meta) {
-      meta = document.createElement('meta');
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (metas.length === 0) {
+      const meta = document.createElement('meta');
       meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', isDark ? '#121212' : '#f8f9fa');
       document.head.appendChild(meta);
+    } else {
+      metas.forEach(meta => {
+        meta.setAttribute('content', isDark ? '#121212' : '#f8f9fa');
+      });
     }
-    meta.setAttribute('content', isDark ? '#121212' : '#f8f9fa');
   };
 
   useEffect(() => {
