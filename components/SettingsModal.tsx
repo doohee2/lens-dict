@@ -97,7 +97,7 @@ export default function SettingsModal({ onClose }: Props) {
         </h2>
         
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-outline-variant/30">
+          <div className="flex flex-col gap-3 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
             <div className="flex justify-between items-center w-full">
               {dictName ? (
                 <p className="font-bold text-primary-fixed-dim text-lg w-full text-center py-2">{dictName}</p>
@@ -109,7 +109,7 @@ export default function SettingsModal({ onClose }: Props) {
               <p className="text-on-surface">총 단어 수</p>
               <div className="flex items-center gap-4">
                 <span className="font-bold text-primary-fixed-dim">
-                  {dictSize !== null ? dictSize.toLocaleString() : '로딩 중...'}
+                  {dictSize !== null ? `${dictSize.toLocaleString()}개` : '로딩 중...'}
                 </span>
                 {!!dictName && (
                   <button 

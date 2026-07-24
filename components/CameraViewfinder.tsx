@@ -185,24 +185,24 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       </div>
 
       {/* Camera Controls */}
-      <div className="absolute top-[66%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
+      <div className="absolute top-[40%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
         {/* Shutter Button */}
         {!isFrozen ? (
           <button 
             aria-label="텍스트 스캔" 
             onClick={captureAndScan}
             disabled={isScanning || !hasPermission}
-            className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 group
-              ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_20px_rgba(3,199,90,0.2)] hover:scale-95'}
+            className={`w-28 h-28 md:w-32 md:h-32 rounded-full border-[6px] flex items-center justify-center transition-all duration-200 group
+              ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_30px_rgba(3,199,90,0.3)] hover:scale-95'}
             `}
           >
-            <div className={`w-16 h-16 rounded-full transition-colors flex items-center justify-center
+            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full transition-colors flex items-center justify-center
               ${isScanning ? 'bg-primary-container animate-pulse' : 'bg-primary-container/20 group-hover:bg-primary-container/40'}
             `}>
               {isScanning ? (
-                <span className="material-symbols-outlined text-[32px] text-on-primary-container animate-spin">sync</span>
+                <span className="material-symbols-outlined text-[48px] text-on-primary-container animate-spin">sync</span>
               ) : (
-                <span className="material-symbols-outlined text-[32px] text-primary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>camera</span>
+                <span className="material-symbols-outlined text-[48px] text-primary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>camera</span>
               )}
             </div>
           </button>
@@ -210,10 +210,10 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
           <button 
             aria-label="재촬영" 
             onClick={retake}
-            className="w-20 h-20 rounded-full border-4 border-error flex items-center justify-center bg-surface-container-highest shadow-[0_0_20px_rgba(186,26,26,0.2)] hover:scale-95 transition-transform duration-100 group"
+            className="w-28 h-28 md:w-32 md:h-32 rounded-full border-[6px] border-error flex items-center justify-center bg-surface-container-highest shadow-[0_0_30px_rgba(186,26,26,0.3)] hover:scale-95 transition-transform duration-100 group"
           >
-            <div className="w-16 h-16 rounded-full bg-error/20 group-hover:bg-error/40 transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-[32px] text-error">refresh</span>
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-error/20 group-hover:bg-error/40 transition-colors flex items-center justify-center">
+              <span className="material-symbols-outlined text-[48px] text-error">refresh</span>
             </div>
           </button>
         )}

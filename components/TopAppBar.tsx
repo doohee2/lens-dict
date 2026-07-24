@@ -10,14 +10,26 @@ export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
   const isOnline = useNetworkStatus();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  const updateMetaThemeColor = (isDark: boolean) => {
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', isDark ? '#121212' : '#f8f9fa');
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
+      updateMetaThemeColor(true);
     } else {
       setIsDarkMode(false);
       document.documentElement.classList.remove('dark');
+      updateMetaThemeColor(false);
     }
   }, []);
 
@@ -26,10 +38,12 @@ export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       setIsDarkMode(false);
+      updateMetaThemeColor(false);
     } else {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
       setIsDarkMode(true);
+      updateMetaThemeColor(true);
     }
   };
 
@@ -48,7 +62,7 @@ export default function TopAppBar({ onOpenSettings, onOpenAbout }: Props) {
         </svg>
       </div>
       
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         {!isOnline && (
           <div className="w-10 h-10 flex items-center justify-center bg-error-container text-on-error-container rounded-full animate-pulse border border-error/20" aria-label="오프라인 모드">
             <span className="material-symbols-outlined text-lg">cloud_off</span>

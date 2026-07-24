@@ -112,7 +112,7 @@
   --color-on-background: #e1e1e1;
 }
 
-body {
+html, body {
   background-color: var(--color-surface);
   color: var(--color-on-surface);
   font-family: var(--font-sans);

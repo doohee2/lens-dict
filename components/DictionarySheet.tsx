@@ -124,8 +124,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   const renderTextBlock = (text: string) => {
     const lines = text.split('\n');
     const maxLineLength = Math.max(...lines.map(l => l.trim().length), 10);
-    // Average char width ~ 0.55em. To fill 80% width: fontSize = 80cqw / (len * 0.55) ≈ 145cqw / len
-    const dynamicFontSize = `clamp(14px, calc(145cqw / ${maxLineLength}), 40px)`;
+    // Average char width ~ 0.55em. To fill 90% width: fontSize = 90cqw / (len * 0.55) ≈ 164cqw / len
+    const dynamicFontSize = `clamp(14px, calc(164cqw / ${maxLineLength}), 40px)`;
     
     return (
       <div className="bg-surface-container-lowest p-5 md:p-6 rounded-2xl w-full text-left shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-outline-variant flex-1 flex flex-col overflow-hidden @container">
