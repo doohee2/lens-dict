@@ -109,7 +109,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         // Tesseract OCR
         const worker = await Tesseract.createWorker('eng');
         await worker.setParameters({
-          tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \'-.,;:!?'
+          tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \'\"-.,:;!?()[]{}@#$%&*+=/<>'
         });
         const { data: { text } } = await worker.recognize(dataUrl);
         await worker.terminate(); // CRITICAL: Prevent Safari memory crash
