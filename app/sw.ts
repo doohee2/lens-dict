@@ -15,12 +15,27 @@ const serwist = new Serwist({
   navigationPreload: false,
   runtimeCaching: [
     {
-      matcher: /\.(?:js|css|woff2?|eot|ttf|otf|png|jpg|jpeg|gif|webp|svg|ico)$/i,
+      matcher: /\.(?:js|css|woff2?|eot|ttf|otf|png|jpg|jpeg|gif|webp|svg|ico|wasm|gz|traineddata)$/i,
       handler: new CacheFirst({
         cacheName: "static-assets",
         plugins: [
           new ExpirationPlugin({
-            maxEntries: 128,
+            maxEntries: 256,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          }),
+        ],
+      }),
+    },
+    {
+      matcher: ({ url }) =>
+        url.hostname.includes("jsdelivr.net") ||
+        url.hostname.includes("projectnaptha.com") ||
+        url.hostname.includes("unpkg.com"),
+      handler: new CacheFirst({
+        cacheName: "tesseract-ocr-cdn",
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 32,
             maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
           }),
         ],

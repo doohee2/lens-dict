@@ -4,6 +4,8 @@
   "description": "오프라인 카메라 OCR 영어 사전 PWA",
   "start_url": "/",
   "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
   "icons": [
     {
       "src": "/icon-512x512.png",
