@@ -15,6 +15,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
+  const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
 
   const startCamera = async () => {
     try {
@@ -26,6 +27,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         videoRef.current.play();
         setHasPermission(true);
         setIsFrozen(false);
+        setCroppedImageUrl(null);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Camera access denied');
@@ -82,6 +84,16 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       const imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
       const data = imageData.data;
       
+      // Save original color crop for image download feature before grayscale processing
+      const colorCropCanvas = document.createElement('canvas');
+      colorCropCanvas.width = cropWidth;
+      colorCropCanvas.height = cropHeight;
+      const colorCropCtx = colorCropCanvas.getContext('2d');
+      if (colorCropCtx) {
+        colorCropCtx.putImageData(imageData, 0, 0);
+        setCroppedImageUrl(colorCropCanvas.toDataURL('image/png'));
+      }
+      
       // Grayscale & Contrast processing
       for (let i = 0; i < data.length; i += 4) {
         // Grayscale
@@ -134,8 +146,44 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
     if (videoRef.current) {
       videoRef.current.play();
       setIsFrozen(false);
+      setCroppedImageUrl(null);
       if (onTextScanned) onTextScanned('');
     }
+  };
+
+  const saveImage = async () => {
+    if (!croppedImageUrl) return;
+    
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const filename = `lens_scan_${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+
+    try {
+      // Convert Data URL to Blob for Web Share API (enables native Save Image on iOS/Android)
+      const response = await fetch(croppedImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: '스캔 영역 이미지 저장',
+        });
+        return;
+      }
+    } catch (err: any) {
+      // If user cancels system share dialog, ignore error
+      if (err?.name === 'AbortError') return;
+      console.log('Share API not available or failed, falling back to download:', err);
+    }
+
+    // Direct download fallback for desktop / non-share environments
+    const link = document.createElement('a');
+    link.href = croppedImageUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -207,15 +255,34 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
             </div>
           </button>
         ) : (
-          <button 
-            aria-label="재촬영" 
-            onClick={retake}
-            className="w-28 h-28 md:w-32 md:h-32 rounded-full border-[6px] border-error flex items-center justify-center bg-surface-container-highest shadow-[0_0_30px_rgba(186,26,26,0.3)] hover:scale-95 transition-transform duration-100 group"
-          >
-            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-error/20 group-hover:bg-error/40 transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-[48px] text-error">refresh</span>
-            </div>
-          </button>
+          <div className="flex items-center justify-center gap-6 md:gap-10 w-full max-w-[420px] px-4">
+            {/* Invisible Left Spacer to keep center Retake button perfectly aligned */}
+            <div className="w-16 h-16 md:w-20 md:h-20 pointer-events-none invisible flex-shrink-0" />
+
+            {/* Retake Button (Center) */}
+            <button 
+              aria-label="재촬영" 
+              onClick={retake}
+              className="w-28 h-28 md:w-32 md:h-32 rounded-full border-[6px] border-error flex items-center justify-center bg-surface-container-highest shadow-[0_0_30px_rgba(186,26,26,0.3)] hover:scale-95 transition-transform duration-100 group flex-shrink-0"
+            >
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-error/20 group-hover:bg-error/40 transition-colors flex items-center justify-center">
+                <span className="material-symbols-outlined text-[48px] text-error">refresh</span>
+              </div>
+            </button>
+
+            {/* Save Image Button (Right) */}
+            <button 
+              aria-label="스캔 영역 이미지 저장" 
+              onClick={saveImage}
+              disabled={!croppedImageUrl}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full border-[4px] border-primary-container bg-surface-container-highest flex items-center justify-center shadow-[0_0_20px_rgba(3,199,90,0.25)] hover:scale-105 active:scale-95 transition-all duration-100 group flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
+              title="녹색 뷰파인더 영역 이미지 저장"
+            >
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary-container/20 group-hover:bg-primary-container/40 transition-colors flex items-center justify-center">
+                <span className="material-symbols-outlined text-[32px] text-primary-fixed">download</span>
+              </div>
+            </button>
+          </div>
         )}
       </div>
     </section>
