@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
+import { purgeSecurityCaches } from '../lib/security';
 
 interface Props {
   onClose: () => void;
@@ -81,6 +82,12 @@ export default function SettingsModal({ onClose }: Props) {
     setProgress(0);
   };
 
+  const handlePurgeCache = async () => {
+    if (!window.confirm('PWA 오프라인 서비스 캐시 스토리지를 즉시 파기(Purge)하시겠습니까?\n(기존 캐시 스토리지가 파괴되며 다음 다운로드 요청 시 안전하게 재캐싱됩니다.)')) return;
+    const res = await purgeSecurityCaches();
+    setStatus(res.message);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-surface-container w-full max-w-lg rounded-2xl p-6 shadow-2xl relative border border-outline-variant">
@@ -137,6 +144,24 @@ export default function SettingsModal({ onClose }: Props) {
                 file:bg-primary-container file:text-on-primary-container
                 hover:file:opacity-90 disabled:opacity-50"
             />
+          </div>
+
+          {/* PWA 오프라인 보안 캐시 초기화 방어 구역 */}
+          <div className="flex items-center justify-between bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
+            <div>
+              <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px]">security</span>
+                PWA 보안 캐시 관리
+              </p>
+              <p className="text-xs text-on-surface-variant mt-0.5">로그아웃 및 기기 반납 대비 (오프라인 캐시 전수 파기)</p>
+            </div>
+            <button
+              onClick={handlePurgeCache}
+              type="button"
+              className="px-3.5 py-2 bg-primary-container text-on-primary-container rounded-xl hover:opacity-90 transition-opacity text-xs font-semibold whitespace-nowrap shadow-sm"
+            >
+              캐시 즉시 파기
+            </button>
           </div>
 
           {isParsing && (

@@ -32,7 +32,8 @@ lens-dict/
 │   └── TopAppBar.tsx       # 모바일 상단 앱바 UI
 ├── lib/
 │   ├── db.ts               # Dexie.js 설정 (사전 및 리소스 테이블 정의)
-│   └── dictParser.worker.ts# Web Worker: JSZip으로 StarDict 파일 파싱 후 DB Bulk Insert
+│   ├── dictParser.worker.ts# Web Worker: JSZip으로 StarDict 파일 파싱 후 DB Bulk Insert
+│   └── security.ts         # 보안 유효성 검증(Zod), 에러 위생화 및 PWA 오프라인 캐시 전수 파기 유틸리티
 ├── stardict/
 │   └── *.zip               # StarDict 포맷의 사전 파일 (업로드용 샘플)
 └── GEMINI.md               # 👈 현재 문서 (개발 및 유지보수 가이드)
@@ -67,6 +68,12 @@ lens-dict/
 7. **오프라인 폰트 지원 (리디바탕)**
    - OCR 스캔 텍스트 영역의 가독성을 높이기 위해 '리디바탕(RIDIBatang)' 웹폰트를 적용했습니다.
    - 외부 CDN이 아닌 `public/fonts/` 경로에 폰트 파일을 직접 내장하여, 오프라인(네트워크 단절) 상태에서도 PWA 서비스 워커 캐시를 통해 완벽하게 폰트가 로드되도록 구성했습니다.
+
+8. **4단계 보안 검증 및 아키텍처 하드닝 (Security Hardening & Zero-Leak)**
+   - **Phase 1 (서버리스 인가 & Zod 입력 검증)**: 향후 API 및 Server Action 확장 시 `zod` 패키지를 사용해 Body/Param 데이터를 엄격히 검증하며, 내부 에러 발생 시 클라이언트에는 `"요청을 처리할 수 없습니다."`로 위생화된 메시지만 반환(`lib/security.ts`)합니다.
+   - **Phase 2 (Zero-Leak 환경변수 및 배포 가이드)**: 클라이언트 자바스크립트 번들에 DB 자격증명 등이 노출되지 않도록 서버 전용 비밀 키에는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않고 순수 백엔드 명칭(예: `SUPABASE_URL`)으로 격리합니다. Vercel 배포 대시보드 등록 시에도 이 기준을 준수해야 합니다.
+   - **Phase 3 (PWA 오프라인 민감 캐시 파기)**: 공용 사용 또는 로그아웃 시 서비스 워커가 런타임 캐싱한 `Cache Storage(Cache API)`의 민감 데이터를 `window.caches.delete`를 순회 호출하여 완벽히 파괴하는 캐시 초기화 방어벽(`purgeSecurityCaches`)이 설정 모달 UI에 적용되어 있습니다.
+   - **Phase 4 (Vercel 배포용 6대 HTTP 보안 헤더)**: `next.config.ts` 전역 라우트에 6대 강력 보안 헤더를 설정했습니다. 특히 **`Permissions-Policy: camera=(self), microphone=(), geolocation=()`** 로 커스텀 설정하여 OCR 카메라 기능을 보호하면서도 불필요한 위치/마이크 권한을 사전에 통제하며, CSP를 통해 XSS를 철저히 차단합니다.
 
 ---
 
