@@ -70,58 +70,90 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       const offsetX = (container.width - scaledVideoWidth) / 2;
       const offsetY = (container.height - scaledVideoHeight) / 2;
       
-      // Create offscreen canvas matched to container display size
+      // [#1] Map crop coordinates to native video resolution for maximum OCR quality
+      const nativeCropX = Math.max(0, Math.round((cropX - offsetX) / scale));
+      const nativeCropY = Math.max(0, Math.round((cropY - offsetY) / scale));
+      const nativeCropW = Math.min(Math.round(cropWidth / scale), video.videoWidth - nativeCropX);
+      const nativeCropH = Math.min(Math.round(cropHeight / scale), video.videoHeight - nativeCropY);
+      
+      // Draw full video frame at native resolution
       const canvas = document.createElement('canvas');
-      canvas.width = container.width;
-      canvas.height = container.height;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
       
-      // Draw the video exactly as object-fit: cover renders it
-      ctx.drawImage(video, offsetX, offsetY, scaledVideoWidth, scaledVideoHeight);
-      
-      // Extract the exact cropped imageData corresponding to the guide box
-      const imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
+      // Extract crop at native camera resolution
+      const imageData = ctx.getImageData(nativeCropX, nativeCropY, nativeCropW, nativeCropH);
       const data = imageData.data;
       
-      // Save original color crop for image download feature before grayscale processing
+      // Save original color crop for image download feature before processing
       const colorCropCanvas = document.createElement('canvas');
-      colorCropCanvas.width = cropWidth;
-      colorCropCanvas.height = cropHeight;
+      colorCropCanvas.width = nativeCropW;
+      colorCropCanvas.height = nativeCropH;
       const colorCropCtx = colorCropCanvas.getContext('2d');
       if (colorCropCtx) {
         colorCropCtx.putImageData(imageData, 0, 0);
         setCroppedImageUrl(colorCropCanvas.toDataURL('image/png'));
       }
       
-      // Grayscale & Contrast processing
+      // [#3] Weighted grayscale (ITU-R BT.601) + build histogram for Otsu
+      const pixelCount = data.length / 4;
+      const grayValues = new Uint8Array(pixelCount);
+      const histogram = new Array(256).fill(0);
       for (let i = 0; i < data.length; i += 4) {
-        // Grayscale
-        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        // Increase contrast
-        const contrast = 1.5;
-        const color = (avg - 128) * contrast + 128;
-        const finalColor = Math.min(255, Math.max(0, color));
-        
-        data[i] = finalColor;     // R
-        data[i + 1] = finalColor; // G
-        data[i + 2] = finalColor; // B
-        // alpha remains unchanged
+        const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+        grayValues[i / 4] = gray;
+        histogram[gray]++;
       }
       
-      // Draw processed image back to a new crop canvas
+      // [#2] Otsu's binarization — find optimal black/white threshold
+      let sum = 0;
+      for (let i = 0; i < 256; i++) sum += i * histogram[i];
+      let sumB = 0;
+      let wB = 0;
+      let maxVariance = 0;
+      let threshold = 128;
+      for (let t = 0; t < 256; t++) {
+        wB += histogram[t];
+        if (wB === 0) continue;
+        const wF = pixelCount - wB;
+        if (wF === 0) break;
+        sumB += t * histogram[t];
+        const mB = sumB / wB;
+        const mF = (sum - sumB) / wF;
+        const variance = wB * wF * (mB - mF) * (mB - mF);
+        if (variance > maxVariance) {
+          maxVariance = variance;
+          threshold = t;
+        }
+      }
+      
+      // Apply binarization — pure black or pure white
+      for (let i = 0; i < data.length; i += 4) {
+        const bw = grayValues[i / 4] > threshold ? 255 : 0;
+        data[i] = bw;
+        data[i + 1] = bw;
+        data[i + 2] = bw;
+      }
+      
+      // Draw processed image back to crop canvas
       const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = cropWidth;
-      cropCanvas.height = cropHeight;
+      cropCanvas.width = nativeCropW;
+      cropCanvas.height = nativeCropH;
       const cropCtx = cropCanvas.getContext('2d');
       if (cropCtx) {
         cropCtx.putImageData(imageData, 0, 0);
-        const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9);
+        // [#4] PNG lossless — no JPEG compression artifacts on letter edges
+        const dataUrl = cropCanvas.toDataURL('image/png');
         
         // Tesseract OCR
         const worker = await Tesseract.createWorker('eng');
         await worker.setParameters({
-          tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \'\"-.,:;!?()[]{}@#$%&*+=/<>'
+          tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \'\"-.,:;!?()[]{}@#$%&*+=/<>',
+          // [#6] PSM 6: Assume a single uniform block of text
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
         });
         const { data: { text } } = await worker.recognize(dataUrl);
         await worker.terminate(); // CRITICAL: Prevent Safari memory crash
