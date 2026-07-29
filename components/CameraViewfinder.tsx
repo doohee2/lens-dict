@@ -20,8 +20,39 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        }
       });
+
+      // Apply macro/close-up focus settings for near-distance text scanning
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        try {
+          const capabilities = track.getCapabilities?.() as any;
+          const advancedConstraints: any = {};
+
+          // Set continuous autofocus for responsive focus tracking
+          if (capabilities?.focusMode?.includes('continuous')) {
+            advancedConstraints.focusMode = 'continuous';
+          }
+
+          // Set minimum focus distance for macro (close-up) mode
+          if (capabilities?.focusDistance) {
+            advancedConstraints.focusDistance = capabilities.focusDistance.min;
+          }
+
+          if (Object.keys(advancedConstraints).length > 0) {
+            await track.applyConstraints({ advanced: [advancedConstraints] });
+          }
+        } catch (focusErr) {
+          // Silently ignore — focus constraints are best-effort
+          console.log('Macro focus not supported on this device:', focusErr);
+        }
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
