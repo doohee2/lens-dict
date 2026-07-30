@@ -3,6 +3,29 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 
+/**
+ * [동기식 Blob 변환]
+ * 사용자 터치 제스처 타이머(Transient Activation)가 만료되기 전에 동기적으로 Base64를 Blob으로 변환합니다.
+ */
+function dataURLtoBlob(dataUrl: string): Blob | null {
+  try {
+    const arr = dataUrl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) return null;
+    const mime = mimeMatch[1];
+    const bstr = window.atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  } catch (e) {
+    console.error('DataURL to Blob conversion failed:', e);
+    return null;
+  }
+}
+
 interface Props {
   onTextScanned?: (text: string) => void;
 }
@@ -16,14 +39,19 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   const [isScanning, setIsScanning] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
+  const [fullFrameImageUrl, setFullFrameImageUrl] = useState<string | null>(null);
+  const [saveModalData, setSaveModalData] = useState<{ url: string; title: string; subtitle: string } | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressRef = useRef<boolean>(false);
 
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          // 4K UHD 화질을 최우선 요청하고 미지원 시 FHD로 폴백
+          width: { ideal: 3840, min: 1920 },
+          height: { ideal: 2160, min: 1080 },
         }
       });
 
@@ -59,6 +87,8 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         setHasPermission(true);
         setIsFrozen(false);
         setCroppedImageUrl(null);
+        setFullFrameImageUrl(null);
+        setSaveModalData(null);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Camera access denied');
@@ -107,29 +137,45 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       const nativeCropW = Math.min(Math.round(cropWidth / scale), video.videoWidth - nativeCropX);
       const nativeCropH = Math.min(Math.round(cropHeight / scale), video.videoHeight - nativeCropY);
       
-      // Draw full video frame at native resolution
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-      
-      // Extract crop at native camera resolution
-      const imageData = ctx.getImageData(nativeCropX, nativeCropY, nativeCropW, nativeCropH);
-      const data = imageData.data;
-      
-      // Save original color crop for image download feature before processing
+      // (1) Draw full video frame at native resolution (4K / FHD) and store for Full-Frame saving
+      const fullCanvas = document.createElement('canvas');
+      fullCanvas.width = video.videoWidth;
+      fullCanvas.height = video.videoHeight;
+      const fullCtx = fullCanvas.getContext('2d');
+      if (!fullCtx) return;
+      fullCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+      setFullFrameImageUrl(fullCanvas.toDataURL('image/png'));
+
+      // (2) Extract original color crop at Native Resolution for Crop image saving
+      const rawImageData = fullCtx.getImageData(nativeCropX, nativeCropY, nativeCropW, nativeCropH);
       const colorCropCanvas = document.createElement('canvas');
       colorCropCanvas.width = nativeCropW;
       colorCropCanvas.height = nativeCropH;
       const colorCropCtx = colorCropCanvas.getContext('2d');
-      if (colorCropCtx) {
-        colorCropCtx.putImageData(imageData, 0, 0);
-        setCroppedImageUrl(colorCropCanvas.toDataURL('image/png'));
-      }
-      
-      // [#3] Weighted grayscale (ITU-R BT.601) + build histogram for Otsu
+      if (!colorCropCtx) return;
+      colorCropCtx.putImageData(rawImageData, 0, 0);
+      setCroppedImageUrl(colorCropCanvas.toDataURL('image/png'));
+
+      // (3) OCR 전용 가로 1600px 스케일링 (1600px 초과 시 다운스케일링, 미만 시 1600px 업스케일링)
+      const targetOcrWidth = 1600;
+      const scaleRatio = targetOcrWidth / nativeCropW;
+      const targetOcrHeight = Math.max(1, Math.round(nativeCropH * scaleRatio));
+
+      const ocrCanvas = document.createElement('canvas');
+      ocrCanvas.width = targetOcrWidth;
+      ocrCanvas.height = targetOcrHeight;
+      const ocrCtx = ocrCanvas.getContext('2d');
+      if (!ocrCtx) return;
+
+      // 안티에이징 고품질 스무딩을 적용하여 ISO 모래알 노이즈 감쇄 및 텍스트 외곽선 선명화
+      ocrCtx.imageSmoothingEnabled = true;
+      ocrCtx.imageSmoothingQuality = 'high';
+      ocrCtx.drawImage(colorCropCanvas, 0, 0, targetOcrWidth, targetOcrHeight);
+
+      const ocrImageData = ocrCtx.getImageData(0, 0, targetOcrWidth, targetOcrHeight);
+      const data = ocrImageData.data;
+
+      // [#3] Weighted grayscale (ITU-R BT.601) + build histogram for Otsu on scaled OCR buffer
       const pixelCount = data.length / 4;
       const grayValues = new Uint8Array(pixelCount);
       const histogram = new Array(256).fill(0);
@@ -138,7 +184,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         grayValues[i / 4] = gray;
         histogram[gray]++;
       }
-      
+
       // [#2] Otsu's binarization — find optimal black/white threshold
       let sum = 0;
       for (let i = 0; i < 256; i++) sum += i * histogram[i];
@@ -160,7 +206,7 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
           threshold = t;
         }
       }
-      
+
       // Apply binarization — pure black or pure white
       for (let i = 0; i < data.length; i += 4) {
         const bw = grayValues[i / 4] > threshold ? 255 : 0;
@@ -168,32 +214,26 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
         data[i + 1] = bw;
         data[i + 2] = bw;
       }
+
+      // Draw processed image back to OCR canvas
+      ocrCtx.putImageData(ocrImageData, 0, 0);
+      // [#4] PNG lossless — no JPEG compression artifacts on letter edges
+      const dataUrl = ocrCanvas.toDataURL('image/png');
       
-      // Draw processed image back to crop canvas
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = nativeCropW;
-      cropCanvas.height = nativeCropH;
-      const cropCtx = cropCanvas.getContext('2d');
-      if (cropCtx) {
-        cropCtx.putImageData(imageData, 0, 0);
-        // [#4] PNG lossless — no JPEG compression artifacts on letter edges
-        const dataUrl = cropCanvas.toDataURL('image/png');
-        
-        // Tesseract OCR
-        const worker = await Tesseract.createWorker('eng');
-        await worker.setParameters({
-          tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \'\"-.,:;!?()[]{}@#$%&*+=/<>',
-          // [#6] PSM 6: Assume a single uniform block of text
-          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-        });
-        const { data: { text } } = await worker.recognize(dataUrl);
-        await worker.terminate(); // CRITICAL: Prevent Safari memory crash
-        
-        // Preserve newlines for full block OCR
-        const cleanText = text.trim();
-        if (cleanText && onTextScanned) {
-          onTextScanned(cleanText);
-        }
+      // Tesseract OCR
+      const worker = await Tesseract.createWorker('eng');
+      await worker.setParameters({
+        tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \'\"-.,:;!?()[]{}@#$%&*+=/<>',
+        // [#6] PSM 6: Assume a single uniform block of text
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+      });
+      const { data: { text } } = await worker.recognize(dataUrl);
+      await worker.terminate(); // CRITICAL: Prevent Safari memory crash
+      
+      // Preserve newlines for full block OCR
+      const cleanText = text.trim();
+      if (cleanText && onTextScanned) {
+        onTextScanned(cleanText);
       }
     } catch (e) {
       console.error('OCR Error:', e);
@@ -210,43 +250,105 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
       videoRef.current.play();
       setIsFrozen(false);
       setCroppedImageUrl(null);
+      setFullFrameImageUrl(null);
+      setSaveModalData(null);
       if (onTextScanned) onTextScanned('');
     }
   };
 
-  const saveImage = async () => {
-    if (!croppedImageUrl) return;
+  const saveImage = async (isFullFrame: boolean) => {
+    const targetUrl = isFullFrame ? fullFrameImageUrl : croppedImageUrl;
+    if (!targetUrl) return;
     
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
-    const filename = `lens_scan_${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+    const prefix = isFullFrame ? 'lens_full_4k_' : 'lens_crop_';
+    const filename = `${prefix}${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+    const titleText = isFullFrame ? '카메라 원본(전체 화면) 사진' : '스캔 영역(크롭) 사진';
+    const subtitleText = isFullFrame
+      ? '카메라에서 송출된 Native 고해상도 전체 원본 프레임입니다.'
+      : '뷰파인더 내부의 Native 고해상도 크롭 프레임입니다.';
+
+    // [1단계] 동기식 Blob 직결 변환 (터치 제스처 권한 유지)
+    const blob = dataURLtoBlob(targetUrl);
+    if (!blob) {
+      setSaveModalData({ url: targetUrl, title: titleText, subtitle: subtitleText });
+      return;
+    }
+
+    const file = new File([blob], filename, { type: 'image/png' });
 
     try {
-      // Convert Data URL to Blob for Web Share API (enables native Save Image on iOS/Android)
-      const response = await fetch(croppedImageUrl);
-      const blob = await response.blob();
-      const file = new File([blob], filename, { type: 'image/png' });
-
+      // iOS / Android 네이티브 공유 및 사진첩 바로 저장 호출
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: '스캔 영역 이미지 저장',
+          title: titleText,
         });
         return;
       }
     } catch (err: any) {
-      // If user cancels system share dialog, ignore error
-      if (err?.name === 'AbortError') return;
-      console.log('Share API not available or failed, falling back to download:', err);
+      // 사용자가 공유 대화창을 명시적으로 취소/닫은 경우 처리 무시
+      if (err?.name === 'AbortError' || err?.message?.includes('Share canceled')) {
+        return;
+      }
+      console.log('Web Share API 호출 중지 또는 정책 제한, 로컬 다운로드 및 대안 팝업 시도:', err);
     }
 
-    // Direct download fallback for desktop / non-share environments
-    const link = document.createElement('a');
-    link.href = croppedImageUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // [2단계] URL.createObjectURL 메모리 포인터 생성으로 안드로이드/웹뷰 용량 한계 돌파 및 다운로드 시도
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+
+      // [3단계] iOS Safari / 모바일 인앱 브라우저(네이버/카카오/인스타 등)는 a.download 속성을 차단하므로 안내 팝업 함께 표출
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+      const isInApp = /KAKAOTALK|NAVER|Instagram|FBAV|LINE/.test(navigator.userAgent);
+      if (isIOS || isInApp) {
+        setSaveModalData({ url: targetUrl, title: titleText, subtitle: subtitleText });
+      }
+    } catch (downloadErr) {
+      console.error('Download fallback failed, opening preview modal:', downloadErr);
+      // 최종 대안 안전장치: 모달 팝업 오픈
+      setSaveModalData({ url: targetUrl, title: titleText, subtitle: subtitleText });
+    }
+  };
+
+  const handleSavePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return; // 마우스는 좌클릭만 허용
+    isLongPressRef.current = false;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      // 길게 누르기 도달 시 미세 촉각 진동 (지원 기기)
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([40, 30, 40]);
+      }
+      saveImage(true); // 전체 화면 고화질 원본 저장
+    }, 550);
+  };
+
+  const handleSavePointerUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (!isLongPressRef.current) {
+      saveImage(false); // 짧은 터치 -> 크롭 영역 저장
+    }
+  };
+
+  const handleSavePointerCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   };
 
   return (
@@ -333,21 +435,68 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
               </div>
             </button>
 
-            {/* Save Image Button (Right) */}
+            {/* Save Image Button (Right - Dual Function: Short Press vs Long Press) */}
             <button 
-              aria-label="스캔 영역 이미지 저장" 
-              onClick={saveImage}
+              aria-label="스캔 크롭 또는 전체 원본 이미지 저장" 
+              onPointerDown={handleSavePointerDown}
+              onPointerUp={handleSavePointerUp}
+              onPointerLeave={handleSavePointerCancel}
+              onPointerCancel={handleSavePointerCancel}
+              onContextMenu={(e) => e.preventDefault()}
               disabled={!croppedImageUrl}
-              className="w-16 h-16 md:w-20 md:h-20 rounded-full border-[4px] border-primary-container bg-surface-container-highest flex items-center justify-center shadow-[0_0_20px_rgba(3,199,90,0.25)] hover:scale-105 active:scale-95 transition-all duration-100 group flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
-              title="녹색 뷰파인더 영역 이미지 저장"
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full border-[4px] border-primary-container bg-surface-container-highest flex items-center justify-center shadow-[0_0_20px_rgba(3,199,90,0.25)] hover:scale-105 active:scale-95 transition-all duration-100 group flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none select-none touch-none"
+              title="짧게 탭: 녹색 크롭 영역 저장 | 길게 꾹 누르기: 4K/고해상도 전체 원본 저장"
             >
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary-container/20 group-hover:bg-primary-container/40 transition-colors flex items-center justify-center">
-                <span className="material-symbols-outlined text-[32px] text-primary-fixed">download</span>
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary-container/20 group-hover:bg-primary-container/40 transition-colors flex items-center justify-center pointer-events-none">
+                <span className="material-symbols-outlined text-[32px] text-primary-fixed pointer-events-none">download</span>
               </div>
             </button>
           </div>
         )}
       </div>
+
+      {/* [3단계 최종 방어벽] 모바일/인앱 브라우저 사진 저장 안내 대안 팝업 */}
+      {saveModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-surface-container w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-outline-variant text-center relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-on-surface text-base flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[20px] text-primary-fixed-dim">photo_library</span>
+                {saveModalData.title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSaveModalData(null)}
+                className="text-on-surface-variant hover:text-on-surface transition-colors rounded-full p-1 bg-surface-container-highest flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-primary-fixed-dim font-medium mb-3 text-left">
+              ✨ {saveModalData.subtitle}
+            </p>
+            <p className="text-xs text-on-surface-variant mb-4 text-left leading-relaxed break-keep">
+              현재 기기 보안 정책으로 자동 파일 저장이 제한될 수 있습니다.<br />
+              <strong className="text-on-surface font-semibold">아래 사진을 손가락으로 꾹 길게 터치(Long-press)한 후 &apos;내 앨범에 저장&apos; 또는 &apos;사진 보관함에 추가&apos;</strong>를 선택해 주세요.
+            </p>
+            <div className="bg-surface-container-lowest p-2 rounded-2xl border border-outline-variant/50 mb-5 shadow-inner flex items-center justify-center max-h-64 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={saveModalData.url}
+                alt={saveModalData.title}
+                className="max-w-full max-h-52 object-contain rounded-xl select-all pointer-events-auto shadow-sm"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSaveModalData(null)}
+              className="w-full py-3 bg-primary-container text-on-primary-container font-semibold rounded-2xl hover:opacity-95 active:scale-[0.98] transition-all text-xs shadow-md"
+            >
+              확인 및 닫기
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

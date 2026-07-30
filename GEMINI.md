@@ -75,6 +75,15 @@ lens-dict/
    - **Phase 3 (PWA 오프라인 민감 캐시 파기)**: 공용 사용 또는 로그아웃 시 서비스 워커가 런타임 캐싱한 `Cache Storage(Cache API)`의 민감 데이터를 `window.caches.delete`를 순회 호출하여 완벽히 파괴하는 캐시 초기화 방어벽(`purgeSecurityCaches`)이 설정 모달 UI에 적용되어 있습니다.
    - **Phase 4 (Vercel 배포용 6대 HTTP 보안 헤더)**: `next.config.ts` 전역 라우트에 6대 강력 보안 헤더를 설정했습니다. 특히 **`Permissions-Policy: camera=(self), microphone=(), geolocation=()`** 로 커스텀 설정하여 OCR 카메라 기능을 보호하면서도 불필요한 위치/마이크 권한을 사전에 통제하며, CSP를 통해 XSS를 철저히 차단합니다.
 
+9. **모바일 PWA 스캔 사진 앨범 저장 하드닝 및 대안 UX**
+   - iOS Safari 및 Android PWA에서 비동기(`await fetch`) 호출로 인해 사용자 터치 제스처 권한(Transient Activation Token)이 만료되어 `navigator.share` 및 앨범 저장이 차단되는 오류를 원천 차단하기 위해, 동기식(`atob`) Base64 -> Blob 직접 변환 파이프라인을 채택했습니다.
+   - PC 및 안드로이드 웹뷰 환경에서는 `URL.createObjectURL` 기반 로컬 포인터로 용량 한계를 극복하며, iOS PWA나 카카오·네이버 등 파일 강제 다운로드를 막는 인앱 브라우저를 위해 "스캔 이미지 가이드 모달 팝업"을 띄워 [이미지 꾹 눌러 내 앨범에 저장]할 수 있는 100% 안심 방어벽 UX를 보증합니다.
+
+10. **4K UHD 고해상도 지원 및 듀얼 사진 저장 / OCR 스케일링 (Decoupling architecture)**
+    - 카메라 센서 및 WebRTC 장치로부터 **최대 4K UHD (`ideal: 3840×2160`) 해상도를 최우선 요청**하여 최고의 촬영 및 인식 원본을 확보합니다.
+    - **듀얼 사진 저장 기능 (짧은 탭 vs 길게 꾹 누르기)**: 통합 포인터 이벤트(`PointerEvent`)를 통해 사용자가 저장 버튼을 **짧게 탭(< 550ms)하면 녹색 박스 내부 영역만 고화질 크롭 저장**하며, **길게 꾹 누르면(≥ 550ms) 미세 촉각 진동 피드백(`navigator.vibrate`)과 함께 잘라내지 않은 4K 고화질 원본 카메라 프레임 전체를 저장**합니다.
+    - **OCR 전처리 스마트 1600px 스케일링 분리**: 사진 저장은 100% Native 고화질을 보존하되, Tesseract OCR 인식 전용 캔버스에서는 가로 크기를 **표준 1600px로 지능형 변환(1600px 초과 시 다운스케일링, 미만 시 업스케일링)**합니다. 이 과정에서 안티에이징 스무딩(`imageSmoothingQuality="high"`)이 개입하여 카메라 ISO 노이즈를 감쇄시키고 외곽선을 선명화하여 단어 인식률 및 모바일 처리 속도를 최대로 견고화했습니다.
+
 ---
 
 ## 🚀 로컬 테스트 및 사용법 (Usage)
