@@ -41,6 +41,8 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [fullFrameImageUrl, setFullFrameImageUrl] = useState<string | null>(null);
   const [saveModalData, setSaveModalData] = useState<{ url: string; title: string; subtitle: string } | null>(null);
+  const [focusPoint, setFocusPoint] = useState<{ x: number; y: number; key: number } | null>(null);
+  const focusTimerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef<boolean>(false);
 
@@ -351,8 +353,62 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
     }
   };
 
+  const handleViewfinderPointerDown = async (e: React.PointerEvent<HTMLElement>) => {
+    // 카메라 권한이 없거나 촬영 정지(Freeze) 상태 또는 UI 컨트롤(버튼) 클릭 시에는 포커스 동작을 무시합니다.
+    if (!hasPermission || isFrozen) return;
+    if ((e.target as HTMLElement).closest('button, a, input, [role="button"]')) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = e.clientX - rect.left;
+    const touchY = e.clientY - rect.top;
+
+    // (1) 시각적 초점 애니메이션 링 및 모바일 촉각 햅틱 피드백 트리거
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    setFocusPoint({ x: touchX, y: touchY, key: Date.now() });
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(20); // 부드러운 초점 터치 진동 피드백
+    }
+    focusTimerRef.current = setTimeout(() => {
+      setFocusPoint(null);
+    }, 1200);
+
+    // (2) WebRTC 하드웨어 카메라 렌즈 모터 초점(Tap-to-Focus) 제어 (Image Capture API)
+    if (!videoRef.current || !videoRef.current.srcObject) return;
+    const stream = videoRef.current.srcObject as MediaStream;
+    const track = stream.getVideoTracks()[0];
+    if (!track || !track.applyConstraints) return;
+
+    try {
+      const capabilities = track.getCapabilities?.() as any;
+      const normX = Math.max(0, Math.min(1, touchX / rect.width));
+      const normY = Math.max(0, Math.min(1, touchY / rect.height));
+
+      // Android Chrome 등 pointsOfInterest(좌표 지정 물리 포커싱)를 지원하는 장치
+      if (capabilities?.pointsOfInterest) {
+        await track.applyConstraints({
+          advanced: [{
+            pointsOfInterest: [{ x: normX, y: normY }],
+            focusMode: capabilities.focusMode?.includes('single-shot') ? 'single-shot' : 'continuous',
+          } as any]
+        });
+      } else if (capabilities?.focusMode?.includes('continuous')) {
+        // iOS Safari 및 일반 브라우저는 focusMode='continuous'를 다시 적용하여 초점 재탐색을 억지로 자극
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'continuous' } as any]
+        });
+      }
+    } catch (focusErr) {
+      // 권한 또는 지원되지 않는 기능 오류 발생 시 UI 피드백만 남기고 조용히 무시
+      console.log('Hardware touch focus constraints best-effort check:', focusErr);
+    }
+  };
+
   return (
-    <section ref={containerRef} className="w-full h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden">
+    <section 
+      ref={containerRef} 
+      onPointerDown={handleViewfinderPointerDown}
+      className="w-full h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden cursor-crosshair"
+    >
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-container-low to-surface-container-highest opacity-50 mix-blend-overlay"></div>
       
@@ -396,6 +452,17 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
           <div className="absolute top-0 left-0 w-full h-[2px] bg-primary-container opacity-60 shadow-[0_0_10px_#03C75A] animate-scan"></div>
         )}
       </div>
+
+      {/* Tap-to-Focus Visualizer Ring */}
+      {focusPoint && (
+        <div
+          key={focusPoint.key}
+          style={{ left: `${focusPoint.x}px`, top: `${focusPoint.y}px` }}
+          className="absolute z-25 pointer-events-none w-16 h-16 border-[2px] border-amber-300 rounded-xl shadow-[0_0_12px_rgba(252,211,77,0.8)] flex items-center justify-center animate-focus-ring -translate-x-1/2 -translate-y-1/2"
+        >
+          <div className="w-2 h-2 bg-amber-300 rounded-full animate-ping opacity-80" />
+        </div>
+      )}
 
       {/* Camera Controls */}
       <div className="absolute top-[60%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
