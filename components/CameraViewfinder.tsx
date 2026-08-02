@@ -223,12 +223,15 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal }: P
       // [#4] PNG lossless — no JPEG compression artifacts on letter edges
       const dataUrl = ocrCanvas.toDataURL('image/png');
       
-      // Tesseract OCR
+      // Tesseract OCR — 영단어 검색에 최적화된 문자 허용 목록
+      // 불필요한 특수문자(괄호, 수학기호 등)를 제거하여 후보 문자군을 축소 → 오인식 확률 감소
       const worker = await Tesseract.createWorker('eng');
       await worker.setParameters({
-        tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \'\"-.,:;!?()[]{}@#$%&*+=/<>',
+        tessedit_char_whitelist: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '-.,",
         // [#6] PSM 6: Assume a single uniform block of text
         tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+        // 단어 간 공백을 원본 그대로 보존 → 터치 검색 시 단어 경계 정확도 향상
+        preserve_interword_spaces: '1',
       });
       const { data: { text } } = await worker.recognize(dataUrl);
       await worker.terminate(); // CRITICAL: Prevent Safari memory crash
