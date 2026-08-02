@@ -14,6 +14,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [isParsing, setIsParsing] = useState(false);
   const [dictSize, setDictSize] = useState<number | null>(null);
   const [dictName, setDictName] = useState<string | null>(null);
+  const [autoFreeDict, setAutoFreeDict] = useState<boolean>(true);
   
   const workerRef = useRef<Worker | null>(null);
 
@@ -38,6 +39,8 @@ export default function SettingsModal({ onClose }: Props) {
 
     checkDictSize();
     setDictName(localStorage.getItem('lensDictName'));
+    const savedAuto = localStorage.getItem('lensDictAutoFreeDict');
+    setAutoFreeDict(savedAuto !== 'false');
 
     return () => {
       workerRef.current?.terminate();
@@ -163,6 +166,29 @@ export default function SettingsModal({ onClose }: Props) {
               캐시 즉시 파기
             </button>
           </div>
+
+          {/* Free Dictionary API 자동 검색 설정 */}
+          <label className="flex items-center justify-between bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm cursor-pointer hover:bg-surface-container-low/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={autoFreeDict}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setAutoFreeDict(val);
+                  localStorage.setItem('lensDictAutoFreeDict', val ? 'true' : 'false');
+                }}
+                className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
+              />
+              <div>
+                <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">public</span>
+                  Free Dictionary API 자동 검색
+                </p>
+                <p className="text-xs text-on-surface-variant mt-0.5">로컬 사전에 단어가 없을 때 글로벌 오픈 사전을 실시간 자동 로드합니다.</p>
+              </div>
+            </div>
+          </label>
 
           {isParsing && (
             <div className="px-2">
