@@ -2,6 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
+import { getLemmas } from '../lib/lemmatizer';
+
+interface LemmaInfo {
+  originalWord: string;
+  lemma: string;
+  label: string;
+}
 
 interface Props {
   scannedTextBlock: string;
@@ -27,6 +34,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
   const [isFallbackLoading, setIsFallbackLoading] = useState(false);
   const [isAutoSearchEnabled, setIsAutoSearchEnabled] = useState(true);
+  const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
@@ -40,74 +48,155 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
     }
   }, []);
 
-  const handleSearch = async (wordToSearch: string) => {
-    if (!wordToSearch) return;
-    try {
-      const result = await db.dictionary.where('word').equals(wordToSearch.toLowerCase()).first() ||
-                     await db.dictionary.where('word').equals(wordToSearch).first();
-                     
-      if (result) {
-        let def = result.definition;
-        
-        const imgRegex = /src=["']([^"']+\.(?:jpg|gif))["']/gi;
-        let match;
-        const matches: string[] = [];
-        
-        while ((match = imgRegex.exec(def)) !== null) {
-          if (!matches.includes(match[1])) {
-            matches.push(match[1]);
-          }
-        }
-
-        for (const filename of matches) {
-          const res = await db.resources.get(filename);
-          if (res) {
-            def = def.replace(new RegExp(`src=["']${filename}["']`, 'g'), `src="${res.data}"`);
-          }
-        }
-
-        setTestResult({ word: result.word, definition: def });
-        setFallbackResult(null);
-        setIsFallbackLoading(false);
-      } else {
-        setTestResult(null); // Not found, fallback to Naver Dict and Free Dictionary API (if enabled)
-        setFallbackResult(null);
-
-        const autoEnabled = typeof localStorage !== 'undefined' ? (localStorage.getItem('lensDictAutoFreeDict') !== 'false') : true;
-        setIsAutoSearchEnabled(autoEnabled);
-
-        if (autoEnabled) {
-          setIsFallbackLoading(true);
-          try {
-            const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordToSearch.trim().toLowerCase())}`);
-            if (res.ok) {
-              const data: FreeDictResult[] = await res.json();
-              if (Array.isArray(data) && data.length > 0) {
-                setFallbackResult(data[0]);
-              }
-            }
-          } catch (apiErr) {
-            console.log('Fallback Free Dictionary API fetch error or offline:', apiErr);
-          } finally {
-            setIsFallbackLoading(false);
-          }
-        } else {
-          setIsFallbackLoading(false);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      setIsFallbackLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (searchWord) {
-      handleSearch(searchWord);
-    } else {
+    const trimmed = searchWord.trim();
+    if (!trimmed) {
       setTestResult(null);
       setFallbackResult(null);
+      setLemmaInfo(null);
+      setIsFallbackLoading(false);
+      return;
     }
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const performSearch = async () => {
+      try {
+        let result = await db.dictionary.where('word').equals(trimmed.toLowerCase()).first() ||
+                       await db.dictionary.where('word').equals(trimmed).first();
+                       
+        if (!isMounted) return;
+
+        let currentLemmaInfo: LemmaInfo | null = null;
+        const lemmas = getLemmas(trimmed);
+
+        // 1차 원본 단어 조회 실패 시, 표제어(원형/단수형) 후보군으로 2차 조회 (0ms 대기 오프라인)
+        if (!result && lemmas.length > 0) {
+          for (const cand of lemmas) {
+            const candRes = await db.dictionary.where('word').equals(cand.lemma.toLowerCase()).first() ||
+                            await db.dictionary.where('word').equals(cand.lemma).first();
+            if (candRes) {
+              result = candRes;
+              currentLemmaInfo = {
+                originalWord: trimmed,
+                lemma: cand.lemma,
+                label: cand.label,
+              };
+              break;
+            }
+          }
+        }
+
+        if (!isMounted) return;
+
+        if (result) {
+          let def = result.definition;
+          
+          const imgRegex = /src=["']([^"']+\.(?:jpg|gif))["']/gi;
+          let match;
+          const matches: string[] = [];
+          
+          while ((match = imgRegex.exec(def)) !== null) {
+            if (!matches.includes(match[1])) {
+              matches.push(match[1]);
+            }
+          }
+
+          for (const filename of matches) {
+            const res = await db.resources.get(filename);
+            if (res) {
+              def = def.replace(new RegExp(`src=["']${filename}["']`, 'g'), `src="${res.data}"`);
+            }
+          }
+
+          if (!isMounted) return;
+          setTestResult({ word: result.word, definition: def });
+          setLemmaInfo(currentLemmaInfo);
+          setFallbackResult(null);
+          setIsFallbackLoading(false);
+        } else {
+          setTestResult(null); // 로컬 DB 및 표제어 2차 조회에서도 없음
+          setFallbackResult(null);
+          setLemmaInfo(null);
+
+          const autoEnabled = typeof localStorage !== 'undefined' ? (localStorage.getItem('lensDictAutoFreeDict') !== 'false') : true;
+          setIsAutoSearchEnabled(autoEnabled);
+
+          if (autoEnabled) {
+            setIsFallbackLoading(true);
+            // 마지막 단어 수정 후 0.5초(500ms) 딜레이를 부여하는 디바운딩 처리
+            timer = setTimeout(async () => {
+              try {
+                let res = await fetch(
+                  `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(trimmed.toLowerCase())}`,
+                  { signal: controller.signal }
+                );
+                let fallbackFound = false;
+                if (!isMounted) return;
+
+                if (res.ok) {
+                  const data: FreeDictResult[] = await res.json();
+                  if (Array.isArray(data) && data.length > 0) {
+                    setFallbackResult(data[0]);
+                    setLemmaInfo(null);
+                    fallbackFound = true;
+                  }
+                }
+
+                // 외부 Free Dictionary API 1차 실패 시 추출해둔 표제어로 2차 폴백 질의
+                if (!fallbackFound && lemmas.length > 0 && isMounted) {
+                  for (const cand of lemmas) {
+                    try {
+                      res = await fetch(
+                        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cand.lemma.toLowerCase())}`,
+                        { signal: controller.signal }
+                      );
+                      if (!isMounted) return;
+                      if (res.ok) {
+                        const data: FreeDictResult[] = await res.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                          setFallbackResult(data[0]);
+                          setLemmaInfo({
+                            originalWord: trimmed,
+                            lemma: cand.lemma,
+                            label: cand.label,
+                          });
+                          fallbackFound = true;
+                          break;
+                        }
+                      }
+                    } catch (err) {
+                      // 개별 표제어 조회 에러 무시
+                    }
+                  }
+                }
+              } catch (apiErr: any) {
+                if (apiErr?.name !== 'AbortError') {
+                  console.log('Fallback Free Dictionary API fetch error or offline:', apiErr);
+                }
+              } finally {
+                if (isMounted) setIsFallbackLoading(false);
+              }
+            }, 500);
+          } else {
+            setIsFallbackLoading(false);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        if (isMounted) setIsFallbackLoading(false);
+      }
+    };
+
+    performSearch();
+
+    return () => {
+      isMounted = false;
+      if (timer) clearTimeout(timer);
+      controller.abort();
+    };
   }, [searchWord]);
 
   // When a new scan comes in, clear the previous search word to show the text block
@@ -273,6 +362,15 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
             <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
               
+              {lemmaInfo && (
+                <div className="bg-indigo-50 border border-indigo-200 text-indigo-950 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs">
+                  <span className="material-symbols-outlined text-[18px] text-indigo-600 shrink-0">auto_fix</span>
+                  <span className="leading-snug">
+                    <strong className="font-semibold text-indigo-900">'{lemmaInfo.originalWord}'</strong>의 {lemmaInfo.label}인 <strong className="text-indigo-700 font-bold underline decoration-indigo-300 underline-offset-2">'{lemmaInfo.lemma}'</strong>(으)로 스마트 검색된 결과입니다.
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="font-display-mobile text-display-mobile text-gray-900 tracking-tight">{testResult.word}</h2>
@@ -315,6 +413,15 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
                   <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-sm text-left">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
                     
+                    {lemmaInfo && (
+                      <div className="bg-indigo-50 border border-indigo-200 text-indigo-950 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs mb-1">
+                        <span className="material-symbols-outlined text-[18px] text-indigo-600 shrink-0">auto_fix</span>
+                        <span className="leading-snug">
+                          <strong className="font-semibold text-indigo-900">'{lemmaInfo.originalWord}'</strong>의 {lemmaInfo.label}인 <strong className="text-indigo-700 font-bold underline decoration-indigo-300 underline-offset-2">'{lemmaInfo.lemma}'</strong>(으)로 스마트 검색된 결과입니다.
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 text-[11px] font-bold bg-amber-100 text-amber-900 rounded-md uppercase tracking-wider">
