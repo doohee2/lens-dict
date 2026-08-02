@@ -28,9 +28,10 @@ function dataURLtoBlob(dataUrl: string): Blob | null {
 
 interface Props {
   onTextScanned?: (text: string) => void;
+  resetCameraSignal?: number;
 }
 
-export default function CameraViewfinder({ onTextScanned }: Props) {
+export default function CameraViewfinder({ onTextScanned, resetCameraSignal }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<HTMLDivElement>(null);
@@ -249,14 +250,20 @@ export default function CameraViewfinder({ onTextScanned }: Props) {
 
   const retake = () => {
     if (videoRef.current) {
-      videoRef.current.play();
-      setIsFrozen(false);
-      setCroppedImageUrl(null);
-      setFullFrameImageUrl(null);
-      setSaveModalData(null);
-      if (onTextScanned) onTextScanned('');
+      videoRef.current.play().catch(() => {});
     }
+    setIsFrozen(false);
+    setCroppedImageUrl(null);
+    setFullFrameImageUrl(null);
+    setSaveModalData(null);
+    if (onTextScanned) onTextScanned('');
   };
+
+  useEffect(() => {
+    if (resetCameraSignal && resetCameraSignal > 0) {
+      retake();
+    }
+  }, [resetCameraSignal]);
 
   const saveImage = async (isFullFrame: boolean) => {
     const targetUrl = isFullFrame ? fullFrameImageUrl : croppedImageUrl;

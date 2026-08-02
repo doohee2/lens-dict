@@ -9,8 +9,14 @@ import AboutModal from '../components/AboutModal';
 
 export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
+  const [resetCameraSignal, setResetCameraSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+
+  const handleClearScannedText = () => {
+    setGlobalOCRText('');
+    setResetCameraSignal(prev => prev + 1);
+  };
 
   return (
     <>
@@ -19,8 +25,14 @@ export default function Home() {
         onOpenAbout={() => setIsAboutOpen(true)}
       />
       <main className="flex-1 flex flex-col mt-[env(safe-area-inset-top,0px)] pt-[48px] h-[100dvh] relative overflow-hidden">
-        <CameraViewfinder onTextScanned={(text) => setGlobalOCRText(text)} />
-        <DictionarySheet scannedTextBlock={globalOCRText} onClearScannedText={() => setGlobalOCRText('')} />
+        <CameraViewfinder 
+          onTextScanned={(text) => setGlobalOCRText(text)} 
+          resetCameraSignal={resetCameraSignal} 
+        />
+        <DictionarySheet 
+          scannedTextBlock={globalOCRText} 
+          onClearScannedText={handleClearScannedText} 
+        />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
       {isAboutOpen && <AboutModal onClose={() => setIsAboutOpen(false)} />}

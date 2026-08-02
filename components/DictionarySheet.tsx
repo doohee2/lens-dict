@@ -264,8 +264,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
         <div className="flex justify-between items-center mb-3 pb-3 border-b border-outline-variant shrink-0">
           <h3 className="font-bold text-primary-fixed-dim">OCR 스캔 텍스트 (단어 탭하여 선택)</h3>
           <button 
-            onClick={onClearScannedText}
-            className="text-on-surface-variant hover:text-error transition-colors"
+            onClick={() => {
+              onClearScannedText();
+              setIsMinimized(true);
+            }}
+            title="스캔 텍스트 삭제 및 카메라 즉시 촬영 모드로 전환"
+            className="text-on-surface-variant hover:text-error transition-colors p-1 -mr-1"
           >
             <span className="material-symbols-outlined">delete</span>
           </button>
