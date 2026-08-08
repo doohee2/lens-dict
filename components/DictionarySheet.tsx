@@ -13,6 +13,7 @@ interface LemmaInfo {
 interface Props {
   scannedTextBlock: string;
   onClearScannedText: () => void;
+  focusSearchInputSignal?: number;
 }
 
 interface FreeDictResult {
@@ -28,7 +29,7 @@ interface FreeDictResult {
   }[];
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, focusSearchInputSignal }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -38,6 +39,16 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
   const [isMinimized, setIsMinimized] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusSearchInputSignal && focusSearchInputSignal > 0) {
+      setIsMinimized(false);
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [focusSearchInputSignal]);
 
   useEffect(() => {
     const saved = localStorage.getItem('lensDictSheetHeightV2');
@@ -326,6 +337,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
               <span className="material-symbols-outlined text-primary-fixed-dim">search</span>
             </div>
             <input 
+              ref={searchInputRef}
               type="text"
               className="block w-full pl-12 pr-24 py-3 bg-surface-container border border-outline-variant rounded-xl text-base font-bold text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow" 
               placeholder="단어를 선택하거나 직접 입력하세요."
@@ -387,6 +399,20 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText }
                 className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap [&_img]:inline-block [&_img]:align-middle [&_img]:m-0"
                 dangerouslySetInnerHTML={{ __html: testResult.definition }}
               ></div>
+              
+              <div className="mt-6 flex justify-center sm:justify-start">
+                <a 
+                  href={`https://dict.naver.com/search.dict?dicType=en&query=${encodeURIComponent(searchWord)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center h-12 px-6 bg-[#03c75a] text-white font-bold text-[15px] rounded-xl gap-2 hover:bg-[#02b351] transition-colors shadow-sm w-full sm:w-auto"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
+                  </svg>
+                  네이버 사전에서 찾기
+                </a>
+              </div>
             </article>
           ) : searchWord ? (
             <div className="flex flex-col gap-4 shrink-0 mb-4">

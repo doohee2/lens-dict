@@ -10,12 +10,29 @@ import AboutModal from '../components/AboutModal';
 export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
   const [resetCameraSignal, setResetCameraSignal] = useState(0);
+  const [focusSearchInputSignal, setFocusSearchInputSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const handleClearScannedText = () => {
     setGlobalOCRText('');
     setResetCameraSignal(prev => prev + 1);
+  };
+
+  const handleStartDictionaryMode = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim().length > 0) {
+          setGlobalOCRText(text.trim());
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('Clipboard access denied or empty', e);
+    }
+    // Fallback or empty clipboard: just focus the search input
+    setFocusSearchInputSignal(prev => prev + 1);
   };
 
   return (
@@ -28,10 +45,12 @@ export default function Home() {
         <CameraViewfinder 
           onTextScanned={(text) => setGlobalOCRText(text)} 
           resetCameraSignal={resetCameraSignal} 
+          onStartDictionaryMode={handleStartDictionaryMode}
         />
         <DictionarySheet 
           scannedTextBlock={globalOCRText} 
           onClearScannedText={handleClearScannedText} 
+          focusSearchInputSignal={focusSearchInputSignal}
         />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}

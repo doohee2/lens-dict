@@ -29,9 +29,10 @@ function dataURLtoBlob(dataUrl: string): Blob | null {
 interface Props {
   onTextScanned?: (text: string) => void;
   resetCameraSignal?: number;
+  onStartDictionaryMode?: () => void;
 }
 
-export default function CameraViewfinder({ onTextScanned, resetCameraSignal }: Props) {
+export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onStartDictionaryMode }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<HTMLDivElement>(null);
@@ -443,6 +444,14 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal }: P
           >
             카메라 시작
           </button>
+          
+          <button
+            onClick={onStartDictionaryMode}
+            className="mt-4 px-4 py-2 bg-surface-container-highest text-on-surface-variant rounded-full font-label-lg shadow-sm hover:scale-105 hover:bg-surface-container-highest/80 transition-all flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">menu_book</span>
+            영한사전 모드
+          </button>
           {errorMsg && <p className="text-error mt-4">{errorMsg}</p>}
         </div>
       )}
@@ -478,24 +487,43 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal }: P
       <div className="absolute top-[60%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
         {/* Shutter Button */}
         {!isFrozen ? (
-          <button 
-            aria-label="텍스트 스캔" 
-            onClick={captureAndScan}
-            disabled={isScanning || !hasPermission}
-            className={`w-28 h-28 md:w-32 md:h-32 rounded-full border-[6px] flex items-center justify-center transition-all duration-200 group
-              ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_30px_rgba(3,199,90,0.3)] hover:scale-95'}
-            `}
-          >
-            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full transition-colors flex items-center justify-center
-              ${isScanning ? 'bg-primary-container animate-pulse' : 'bg-primary-container/20 group-hover:bg-primary-container/40'}
-            `}>
-              {isScanning ? (
-                <span className="material-symbols-outlined text-[48px] text-on-primary-container animate-spin">sync</span>
-              ) : (
-                <span className="material-symbols-outlined text-[48px] text-primary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>camera</span>
-              )}
-            </div>
-          </button>
+          <div className="flex items-center justify-center gap-6 md:gap-10 w-full max-w-[420px] px-4">
+            {/* Left Spacer for alignment */}
+            <div className="w-16 h-16 md:w-20 md:h-20 pointer-events-none invisible flex-shrink-0" />
+            
+            {/* Shutter Button */}
+            <button 
+              aria-label="텍스트 스캔" 
+              onClick={captureAndScan}
+              disabled={isScanning || !hasPermission}
+              className={`w-28 h-28 md:w-32 md:h-32 rounded-full border-[6px] flex items-center justify-center transition-all duration-200 group flex-shrink-0
+                ${isScanning ? 'bg-primary-container/50 border-primary-container scale-95' : 'bg-surface-container-highest border-primary-container shadow-[0_0_30px_rgba(3,199,90,0.3)] hover:scale-95'}
+              `}
+            >
+              <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full transition-colors flex items-center justify-center
+                ${isScanning ? 'bg-primary-container animate-pulse' : 'bg-primary-container/20 group-hover:bg-primary-container/40'}
+              `}>
+                {isScanning ? (
+                  <span className="material-symbols-outlined text-[48px] text-on-primary-container animate-spin">sync</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[48px] text-primary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>camera</span>
+                )}
+              </div>
+            </button>
+            
+            {/* Dictionary Mode Button */}
+            <button 
+              aria-label="영한사전 모드" 
+              onClick={onStartDictionaryMode}
+              disabled={!hasPermission}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full border-[4px] border-secondary-container bg-surface-container-highest flex items-center justify-center shadow-[0_0_20px_rgba(3,199,90,0.15)] hover:scale-105 active:scale-95 transition-all duration-100 group flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
+              title="사전 모드"
+            >
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary-container/30 group-hover:bg-secondary-container/50 transition-colors flex items-center justify-center pointer-events-none">
+                <span className="material-symbols-outlined text-[32px] text-secondary pointer-events-none">menu_book</span>
+              </div>
+            </button>
+          </div>
         ) : (
           <div className="flex items-center justify-center gap-6 md:gap-10 w-full max-w-[420px] px-4">
             {/* Invisible Left Spacer to keep center Retake button perfectly aligned */}
