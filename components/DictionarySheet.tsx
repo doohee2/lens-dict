@@ -37,12 +37,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [isAutoSearchEnabled, setIsAutoSearchEnabled] = useState(true);
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isDictionaryMode, setIsDictionaryMode] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (focusSearchInputSignal && focusSearchInputSignal > 0) {
+      setIsDictionaryMode(true);
       setIsMinimized(false);
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -277,6 +279,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           <button 
             onClick={() => {
               onClearScannedText();
+              setIsDictionaryMode(false);
               setIsMinimized(true);
             }}
             title="스캔 텍스트 삭제 및 카메라 즉시 촬영 모드로 전환"
@@ -318,7 +321,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   return (
     <>
       <section 
-        className={`absolute bottom-0 left-0 w-full bg-surface/95 backdrop-blur-3xl border-outline-variant flex flex-col rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 transition-transform duration-300 ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
+        className={`absolute bottom-0 left-0 w-full bg-surface/95 backdrop-blur-3xl border-outline-variant flex flex-col rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 transition-transform duration-300 ${(scannedTextBlock || searchWord || isDictionaryMode) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
         style={{ height: `${sheetHeight}vh` }}
       >
         {/* Mobile Puller Handle */}
@@ -340,7 +343,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
               ref={searchInputRef}
               type="text"
               className="block w-full pl-12 pr-24 py-3 bg-surface-container border border-outline-variant rounded-xl text-base font-bold text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow" 
-              placeholder="단어를 선택하거나 직접 입력하세요."
+              placeholder="단어를 선택하거나 입력하세요."
               value={searchWord}
               onChange={(e) => setSearchWord(e.target.value)}
             />
