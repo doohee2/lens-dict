@@ -30,9 +30,10 @@ interface Props {
   onTextScanned?: (text: string) => void;
   resetCameraSignal?: number;
   onStartDictionaryMode?: () => void;
+  onBackgroundTap?: () => void;
 }
 
-export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onStartDictionaryMode }: Props) {
+export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onStartDictionaryMode, onBackgroundTap }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<HTMLDivElement>(null);
@@ -365,9 +366,16 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
   };
 
   const handleViewfinderPointerDown = async (e: React.PointerEvent<HTMLElement>) => {
-    // 카메라 권한이 없거나 촬영 정지(Freeze) 상태 또는 UI 컨트롤(버튼) 클릭 시에는 포커스 동작을 무시합니다.
-    if (!hasPermission || isFrozen) return;
+    // 권한이 없거나 UI 컨트롤(버튼) 클릭 시에는 배경 터치/초점 동작 무시
+    if (!hasPermission) return;
     if ((e.target as HTMLElement).closest('button, a, input, [role="button"]')) return;
+
+    if (onBackgroundTap) {
+      onBackgroundTap();
+    }
+
+    // 촬영 정지(Freeze) 상태일 때는 초점(포커스 링) 동작 무시
+    if (isFrozen) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const touchX = e.clientX - rect.left;

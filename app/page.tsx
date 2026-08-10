@@ -11,12 +11,17 @@ export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
   const [resetCameraSignal, setResetCameraSignal] = useState(0);
   const [focusSearchInputSignal, setFocusSearchInputSignal] = useState(0);
+  const [toggleSheetSignal, setToggleSheetSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const handleClearScannedText = () => {
     setGlobalOCRText('');
     setResetCameraSignal(prev => prev + 1);
+  };
+
+  const handleBackgroundTap = () => {
+    setToggleSheetSignal(prev => prev + 1);
   };
 
   const handleStartDictionaryMode = async () => {
@@ -46,11 +51,13 @@ export default function Home() {
           onTextScanned={(text) => setGlobalOCRText(text)} 
           resetCameraSignal={resetCameraSignal} 
           onStartDictionaryMode={handleStartDictionaryMode}
+          onBackgroundTap={handleBackgroundTap}
         />
         <DictionarySheet 
           scannedTextBlock={globalOCRText} 
           onClearScannedText={handleClearScannedText} 
           focusSearchInputSignal={focusSearchInputSignal}
+          toggleSheetSignal={toggleSheetSignal}
         />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}

@@ -14,6 +14,7 @@ interface Props {
   scannedTextBlock: string;
   onClearScannedText: () => void;
   focusSearchInputSignal?: number;
+  toggleSheetSignal?: number;
 }
 
 interface FreeDictResult {
@@ -29,7 +30,7 @@ interface FreeDictResult {
   }[];
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, focusSearchInputSignal }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, focusSearchInputSignal, toggleSheetSignal }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -51,6 +52,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       }, 50);
     }
   }, [focusSearchInputSignal]);
+
+  useEffect(() => {
+    if (toggleSheetSignal && toggleSheetSignal > 0) {
+      if (scannedTextBlock || searchWord || isDictionaryMode) {
+        setIsMinimized(prev => !prev);
+      }
+    }
+  }, [toggleSheetSignal]);
 
   useEffect(() => {
     const saved = localStorage.getItem('lensDictSheetHeightV2');
