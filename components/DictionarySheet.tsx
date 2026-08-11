@@ -240,6 +240,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
 
   const handlePointerDown = (e: React.PointerEvent) => {
     const startY = e.clientY;
+    const startHeight = heightRef.current;
     const startTime = Date.now();
     let dragged = false;
 
@@ -247,10 +248,13 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     document.body.style.touchAction = 'none';
     
     const handlePointerMove = (moveEvent: PointerEvent) => {
-      if (Math.abs(moveEvent.clientY - startY) > 10) dragged = true;
+      if (Math.abs(moveEvent.clientY - startY) > 15) dragged = true;
       if (dragged) {
         if (isMinimized) setIsMinimized(false);
-        const newHeight = ((window.innerHeight - moveEvent.clientY) / window.innerHeight) * 100;
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        const deltaY = startY - moveEvent.clientY;
+        const deltaHeight = (deltaY / vh) * 100;
+        const newHeight = startHeight + deltaHeight;
         if (newHeight >= 15 && newHeight <= 90) {
           setSheetHeight(newHeight);
           heightRef.current = newHeight;
@@ -340,9 +344,9 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
         >
           <svg width="24" height="12" viewBox="0 0 24 12" className="text-outline-variant fill-current pointer-events-none">
             {isMinimized ? (
-              <polygon points="0,0 24,0 12,12" />
-            ) : (
               <polygon points="12,0 24,12 0,12" />
+            ) : (
+              <polygon points="0,0 24,0 12,12" />
             )}
           </svg>
         </div>
