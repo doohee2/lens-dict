@@ -37,9 +37,17 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [isAutoSearchEnabled, setIsAutoSearchEnabled] = useState(true);
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [prevScannedText, setPrevScannedText] = useState(scannedTextBlock);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Derived state: 렌더링 페이즈에서 상태를 동기적으로 리셋하여 CSS 트랜지션 글리치나 Race Condition을 원천 차단
+  if (scannedTextBlock !== prevScannedText) {
+    setPrevScannedText(scannedTextBlock);
+    setSearchWord('');
+    setIsMinimized(false);
+  }
 
   useEffect(() => {
     if (toggleSheetSignal && toggleSheetSignal > 0) {
@@ -203,13 +211,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       controller.abort();
     };
   }, [searchWord]);
-
-  useEffect(() => {
-    if (scannedTextBlock) {
-      setSearchWord('');
-      setIsMinimized(false);
-    }
-  }, [scannedTextBlock]);
 
   useEffect(() => {
     if (searchWord) {
