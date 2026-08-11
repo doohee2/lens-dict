@@ -366,16 +366,15 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
   };
 
   const handleViewfinderPointerDown = async (e: React.PointerEvent<HTMLElement>) => {
-    // 권한이 없거나 UI 컨트롤(버튼) 클릭 시에는 배경 터치/초점 동작 무시
-    if (!hasPermission) return;
+    // UI 컨트롤(버튼) 클릭 시에는 배경 터치/초점 동작 무시
     if ((e.target as HTMLElement).closest('button, a, input, [role="button"]')) return;
 
     if (onBackgroundTap) {
       onBackgroundTap();
     }
 
-    // 촬영 정지(Freeze) 상태일 때는 초점(포커스 링) 동작 무시
-    if (isFrozen) return;
+    // 카메라 권한이 없거나 촬영 정지(Freeze) 상태일 때는 초점(포커스 링) 동작 무시
+    if (!hasPermission || isFrozen) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const touchX = e.clientX - rect.left;

@@ -335,10 +335,16 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       >
         {/* Mobile Puller Handle */}
         <div 
-          className="w-full flex justify-center pt-3 pb-3 cursor-grab active:cursor-grabbing touch-none"
+          className="w-full flex justify-center py-5 cursor-grab active:cursor-grabbing touch-none"
           onPointerDown={handlePointerDown}
         >
-          <div className="w-12 h-1.5 bg-outline-variant rounded-full pointer-events-none"></div>
+          <svg width="24" height="12" viewBox="0 0 24 12" className="text-outline-variant fill-current pointer-events-none">
+            {isMinimized ? (
+              <polygon points="12,0 24,12 0,12" />
+            ) : (
+              <polygon points="0,0 24,0 12,12" />
+            )}
+          </svg>
         </div>
         
         <div className={`flex-1 px-margin-edge py-stack-md flex flex-col gap-container-gap ${scannedTextBlock && !searchWord ? 'overflow-hidden' : 'overflow-y-auto'}`}>
