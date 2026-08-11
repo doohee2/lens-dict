@@ -47,9 +47,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     if (focusSearchInputSignal && focusSearchInputSignal > 0) {
       setIsDictionaryMode(true);
       setIsMinimized(false);
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
     }
   }, [focusSearchInputSignal]);
 
@@ -351,7 +348,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           </svg>
         </div>
         
-        <div className={`flex-1 px-margin-edge py-stack-md flex flex-col gap-container-gap ${scannedTextBlock && !searchWord ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 px-margin-edge py-stack-md flex flex-col gap-container-gap ${!searchWord ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           
           {/* Search Bar */}
           <div className="relative w-full mb-2 shrink-0">
@@ -394,8 +391,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           </div>
 
           {/* Dictionary Result or OCR Text Block */}
-          {scannedTextBlock && !searchWord ? (
-            renderTextBlock(scannedTextBlock)
+          {!searchWord ? (
+            renderTextBlock(scannedTextBlock || "클립보드에 복사된 텍스트가 없습니다. 단어를 스캔하거나 직접 입력해주세요.")
           ) : testResult ? (
             <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
