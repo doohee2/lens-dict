@@ -13,7 +13,8 @@ interface LemmaInfo {
 interface Props {
   scannedTextBlock: string;
   onClearScannedText: () => void;
-  toggleSheetSignal?: number;
+  isMinimized: boolean;
+  onMinimizedChange: (minimized: boolean) => void;
 }
 
 interface FreeDictResult {
@@ -29,33 +30,16 @@ interface FreeDictResult {
   }[];
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, toggleSheetSignal }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
   const [isFallbackLoading, setIsFallbackLoading] = useState(false);
   const [isAutoSearchEnabled, setIsAutoSearchEnabled] = useState(true);
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [prevScannedText, setPrevScannedText] = useState(scannedTextBlock);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Derived state: 렌더링 페이즈에서 상태를 동기적으로 리셋하여 CSS 트랜지션 글리치나 Race Condition을 원천 차단
-  if (scannedTextBlock !== prevScannedText) {
-    setPrevScannedText(scannedTextBlock);
-    setSearchWord('');
-    setIsMinimized(false);
-  }
-
-  useEffect(() => {
-    if (toggleSheetSignal && toggleSheetSignal > 0) {
-      if (scannedTextBlock || searchWord) {
-        setIsMinimized(prev => !prev);
-      }
-    }
-  }, [toggleSheetSignal]);
 
   useEffect(() => {
     const saved = localStorage.getItem('lensDictSheetHeightV2');
@@ -214,7 +198,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
 
   useEffect(() => {
     if (searchWord) {
-      setIsMinimized(false);
+      onMinimizedChange(false);
     }
   }, [searchWord]);
 
@@ -230,7 +214,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (Math.abs(moveEvent.clientY - startY) > 15) dragged = true;
       if (dragged) {
-        if (isMinimized) setIsMinimized(false);
+        if (isMinimized) onMinimizedChange(false);
         const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         const deltaY = startY - moveEvent.clientY;
         const deltaHeight = (deltaY / vh) * 100;
@@ -249,7 +233,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       document.removeEventListener('pointerup', handlePointerUp);
       
       if (!dragged && Date.now() - startTime < 300) {
-        setIsMinimized(prev => !prev);
+        onMinimizedChange(!isMinimized);
       } else if (dragged) {
         localStorage.setItem('lensDictSheetHeightV2', heightRef.current.toString());
       }
@@ -271,7 +255,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           <button 
             onClick={() => {
               onClearScannedText();
-              setIsMinimized(true);
+              onMinimizedChange(true);
             }}
             title="스캔 텍스트 삭제 및 카메라 즉시 촬영 모드로 전환"
             className="text-on-surface-variant hover:text-error transition-colors p-1 -mr-1"
