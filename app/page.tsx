@@ -11,6 +11,7 @@ export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
   const [resetCameraSignal, setResetCameraSignal] = useState(0);
   const [isSheetMinimized, setIsSheetMinimized] = useState(true);
+  const [autoFocusSignal, setAutoFocusSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
@@ -39,10 +40,15 @@ export default function Home() {
     } catch (e) {
       console.log('Clipboard access denied or empty', e);
     }
-    // 클립보드가 비어있어도 동일한 OCR 바텀시트 UI를 유지하기 위해 공백을 스캔 결과로 처리
+    
+    // [iOS/Safari 트랜지션 타이밍 버그 우회 및 상태 동기화]
+    // 클립보드가 비어있어도 동일한 OCR 바텀시트 UI(검색창)를 유지하기 위해 공백을 스캔 결과로 처리합니다.
+    // 비동기 팝업 없이 즉각적으로 실행될 경우, React 렌더링 틱과 CSS transition이 경합하여 
+    // 바텀시트가 열리지 않고 닫힌(minimized) 상태로 렌더링되는 현상을 방지하기 위해 100ms의 마이크로 딜레이를 줍니다.
     setGlobalOCRText(' ');
     setTimeout(() => {
       setIsSheetMinimized(false);
+      setAutoFocusSignal(prev => prev + 1); // 빈 텍스트 상태로 열릴 때는 즉각적인 검색을 위해 인풋 박스에 포커스
     }, 100);
   };
 
@@ -67,6 +73,7 @@ export default function Home() {
           onClearScannedText={handleClearScannedText} 
           isMinimized={isSheetMinimized}
           onMinimizedChange={setIsSheetMinimized}
+          autoFocusSignal={autoFocusSignal}
         />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}

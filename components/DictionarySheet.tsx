@@ -15,6 +15,7 @@ interface Props {
   onClearScannedText: () => void;
   isMinimized: boolean;
   onMinimizedChange: (minimized: boolean) => void;
+  autoFocusSignal?: number;
 }
 
 interface FreeDictResult {
@@ -30,7 +31,7 @@ interface FreeDictResult {
   }[];
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -49,6 +50,15 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       heightRef.current = h;
     }
   }, []);
+
+  useEffect(() => {
+    if (autoFocusSignal && autoFocusSignal > 0) {
+      // 0.1초 딜레이를 통해 바텀시트가 올라오는 트랜지션이 시작된 직후 포커스
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [autoFocusSignal]);
 
   useEffect(() => {
     const trimmed = searchWord.trim();
