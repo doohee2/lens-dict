@@ -56,7 +56,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       // 0.1초 딜레이를 통해 바텀시트가 올라오는 트랜지션이 시작된 직후 포커스
       setTimeout(() => {
         searchInputRef.current?.focus();
-      }, 500);
+      }, 100);
     }
   }, [autoFocusSignal]);
 
