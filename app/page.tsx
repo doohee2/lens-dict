@@ -10,7 +10,6 @@ import AboutModal from '../components/AboutModal';
 export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
   const [resetCameraSignal, setResetCameraSignal] = useState(0);
-  const [focusSearchInputSignal, setFocusSearchInputSignal] = useState(0);
   const [toggleSheetSignal, setToggleSheetSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -36,8 +35,8 @@ export default function Home() {
     } catch (e) {
       console.log('Clipboard access denied or empty', e);
     }
-    // Fallback or empty clipboard: just focus the search input
-    setFocusSearchInputSignal(prev => prev + 1);
+    // 클립보드가 비어있어도 동일한 OCR 바텀시트 UI를 유지하기 위해 공백을 스캔 결과로 처리
+    setGlobalOCRText(' ');
   };
 
   return (
@@ -56,7 +55,6 @@ export default function Home() {
         <DictionarySheet 
           scannedTextBlock={globalOCRText} 
           onClearScannedText={handleClearScannedText} 
-          focusSearchInputSignal={focusSearchInputSignal}
           toggleSheetSignal={toggleSheetSignal}
         />
       </main>

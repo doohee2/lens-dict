@@ -13,7 +13,6 @@ interface LemmaInfo {
 interface Props {
   scannedTextBlock: string;
   onClearScannedText: () => void;
-  focusSearchInputSignal?: number;
   toggleSheetSignal?: number;
 }
 
@@ -30,7 +29,7 @@ interface FreeDictResult {
   }[];
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, focusSearchInputSignal, toggleSheetSignal }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, toggleSheetSignal }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{word: string, definition: string} | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -38,21 +37,13 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [isAutoSearchEnabled, setIsAutoSearchEnabled] = useState(true);
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isDictionaryMode, setIsDictionaryMode] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (focusSearchInputSignal && focusSearchInputSignal > 0) {
-      setIsDictionaryMode(true);
-      setIsMinimized(false);
-    }
-  }, [focusSearchInputSignal]);
-
-  useEffect(() => {
     if (toggleSheetSignal && toggleSheetSignal > 0) {
-      if (scannedTextBlock || searchWord || isDictionaryMode) {
+      if (scannedTextBlock || searchWord) {
         setIsMinimized(prev => !prev);
       }
     }
@@ -91,7 +82,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
         let currentLemmaInfo: LemmaInfo | null = null;
         const lemmas = getLemmas(trimmed);
 
-        // 1차 원본 단어 조회 실패 시, 표제어(원형/단수형) 후보군으로 2차 조회 (0ms 대기 오프라인)
         if (!result && lemmas.length > 0) {
           for (const cand of lemmas) {
             const candRes = await db.dictionary.where('word').equals(cand.lemma.toLowerCase()).first() ||
@@ -136,7 +126,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           setFallbackResult(null);
           setIsFallbackLoading(false);
         } else {
-          setTestResult(null); // 로컬 DB 및 표제어 2차 조회에서도 없음
+          setTestResult(null);
           setFallbackResult(null);
           setLemmaInfo(null);
 
@@ -145,7 +135,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
 
           if (autoEnabled) {
             setIsFallbackLoading(true);
-            // 마지막 단어 수정 후 0.5초(500ms) 딜레이를 부여하는 디바운딩 처리
             timer = setTimeout(async () => {
               try {
                 let res = await fetch(
@@ -164,7 +153,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                   }
                 }
 
-                // 외부 Free Dictionary API 1차 실패 시 추출해둔 표제어로 2차 폴백 질의
                 if (!fallbackFound && lemmas.length > 0 && isMounted) {
                   for (const cand of lemmas) {
                     try {
@@ -186,9 +174,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                           break;
                         }
                       }
-                    } catch (err) {
-                      // 개별 표제어 조회 에러 무시
-                    }
+                    } catch (err) {}
                   }
                 }
               } catch (apiErr: any) {
@@ -218,7 +204,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     };
   }, [searchWord]);
 
-  // When a new scan comes in, clear the previous search word to show the text block
   useEffect(() => {
     if (scannedTextBlock) {
       setSearchWord('');
@@ -226,14 +211,11 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     }
   }, [scannedTextBlock]);
 
-  // When a word is searched manually, pop up the sheet
   useEffect(() => {
     if (searchWord) {
       setIsMinimized(false);
     }
   }, [searchWord]);
-
-  // Dynamic text size logic is now handled inline via cqw (container queries) based on max line length.
 
   const handlePointerDown = (e: React.PointerEvent) => {
     const startY = e.clientY;
@@ -279,7 +261,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const renderTextBlock = (text: string) => {
     const lines = text.split('\n');
     const maxLineLength = Math.max(...lines.map(l => l.trim().length), 10);
-    // Average char width ~ 0.55em. To fill 90% width: fontSize = 90cqw / (len * 0.55) ≈ 164cqw / len
     const dynamicFontSize = `clamp(14px, calc(164cqw / ${maxLineLength}), 40px)`;
     
     return (
@@ -289,7 +270,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           <button 
             onClick={() => {
               onClearScannedText();
-              setIsDictionaryMode(false);
               setIsMinimized(true);
             }}
             title="스캔 텍스트 삭제 및 카메라 즉시 촬영 모드로 전환"
@@ -331,7 +311,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   return (
     <>
       <section 
-        className={`absolute bottom-0 left-0 w-full bg-surface/95 backdrop-blur-3xl border-outline-variant flex flex-col rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 transition-transform duration-300 ${(scannedTextBlock || searchWord || isDictionaryMode) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
+        className={`absolute bottom-0 left-0 w-full bg-surface/95 backdrop-blur-3xl border-outline-variant flex flex-col rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 transition-transform duration-300 ${(scannedTextBlock || searchWord) ? (isMinimized ? 'translate-y-[calc(100%-2.5rem)]' : 'translate-y-0') : 'translate-y-full'}`}
         style={{ height: `${sheetHeight}vh` }}
       >
         {/* Mobile Puller Handle */}
@@ -348,7 +328,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           </svg>
         </div>
         
-        <div className={`flex-1 px-margin-edge py-stack-md flex flex-col gap-container-gap ${!searchWord ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 px-margin-edge py-stack-md flex flex-col gap-container-gap ${scannedTextBlock && !searchWord ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           
           {/* Search Bar */}
           <div className="relative w-full mb-2 shrink-0">
@@ -391,8 +371,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           </div>
 
           {/* Dictionary Result or OCR Text Block */}
-          {!searchWord ? (
-            renderTextBlock(scannedTextBlock || "클립보드에 복사된 텍스트가 없습니다. 단어를 스캔하거나 직접 입력해주세요.")
+          {scannedTextBlock && !searchWord ? (
+            renderTextBlock(scannedTextBlock)
           ) : testResult ? (
             <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
