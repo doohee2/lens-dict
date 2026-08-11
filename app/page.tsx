@@ -41,7 +41,9 @@ export default function Home() {
     }
     // 클립보드가 비어있어도 동일한 OCR 바텀시트 UI를 유지하기 위해 공백을 스캔 결과로 처리
     setGlobalOCRText(' ');
-    setIsSheetMinimized(false);
+    setTimeout(() => {
+      setIsSheetMinimized(false);
+    }, 100);
   };
 
   return (
