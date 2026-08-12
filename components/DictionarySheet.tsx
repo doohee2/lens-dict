@@ -31,12 +31,29 @@ interface FreeDictResult {
   }[];
 }
 
+interface WikiResult {
+  title: string;
+  extract: string;
+  thumbnail?: {
+    source: string;
+    width: number;
+    height: number;
+  };
+  description?: string;
+  content_urls?: {
+    desktop: {
+      page: string;
+    };
+  };
+}
+
 export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{ word: string, definition: string } | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
+  const [fallbackWikiResult, setFallbackWikiResult] = useState<WikiResult | null>(null);
   const [isFallbackLoading, setIsFallbackLoading] = useState(false);
-  const [isAutoSearchEnabled, setIsAutoSearchEnabled] = useState(true);
+  const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('none');
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [sheetHeight, setSheetHeight] = useState(65);
   const heightRef = useRef(65);
@@ -65,6 +82,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     if (!trimmed) {
       setTestResult(null);
       setFallbackResult(null);
+      setFallbackWikiResult(null);
       setLemmaInfo(null);
       setIsFallbackLoading(false);
       return;
@@ -126,16 +144,28 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           setTestResult({ word: result.word, definition: def });
           setLemmaInfo(currentLemmaInfo);
           setFallbackResult(null);
+          setFallbackWikiResult(null);
           setIsFallbackLoading(false);
         } else {
           setTestResult(null);
           setFallbackResult(null);
+          setFallbackWikiResult(null);
           setLemmaInfo(null);
 
-          const autoEnabled = typeof localStorage !== 'undefined' ? (localStorage.getItem('lensDictAutoFreeDict') !== 'false') : true;
-          setIsAutoSearchEnabled(autoEnabled);
+          // Fallback API Type 확인
+          let apiType = 'freedict';
+          if (typeof localStorage !== 'undefined') {
+            const savedType = localStorage.getItem('lensDictFallbackApiType');
+            const oldSavedAuto = localStorage.getItem('lensDictAutoFreeDict');
+            if (savedType) {
+              apiType = savedType;
+            } else if (oldSavedAuto === 'false') {
+              apiType = 'none';
+            }
+          }
+          setFallbackApiType(apiType as 'freedict' | 'wikipedia' | 'none');
 
-          if (autoEnabled) {
+          if (apiType === 'freedict') {
             setIsFallbackLoading(true);
             timer = setTimeout(async () => {
               try {
@@ -182,6 +212,58 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
               } catch (apiErr: any) {
                 if (apiErr?.name !== 'AbortError') {
                   console.log('Fallback Free Dictionary API fetch error or offline:', apiErr);
+                }
+              } finally {
+                if (isMounted) setIsFallbackLoading(false);
+              }
+            }, 500);
+          } else if (apiType === 'wikipedia') {
+            setIsFallbackLoading(true);
+            timer = setTimeout(async () => {
+              try {
+                let res = await fetch(
+                  `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(trimmed)}`,
+                  { signal: controller.signal }
+                );
+                let fallbackFound = false;
+                if (!isMounted) return;
+
+                if (res.ok) {
+                  const data: WikiResult = await res.json();
+                  if (data.extract) {
+                    setFallbackWikiResult(data);
+                    setLemmaInfo(null);
+                    fallbackFound = true;
+                  }
+                }
+
+                if (!fallbackFound && lemmas.length > 0 && isMounted) {
+                  for (const cand of lemmas) {
+                    try {
+                      res = await fetch(
+                        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cand.lemma)}`,
+                        { signal: controller.signal }
+                      );
+                      if (!isMounted) return;
+                      if (res.ok) {
+                        const data: WikiResult = await res.json();
+                        if (data.extract) {
+                          setFallbackWikiResult(data);
+                          setLemmaInfo({
+                            originalWord: trimmed,
+                            lemma: cand.lemma,
+                            label: cand.label,
+                          });
+                          fallbackFound = true;
+                          break;
+                        }
+                      }
+                    } catch (err) { }
+                  }
+                }
+              } catch (apiErr: any) {
+                if (apiErr?.name !== 'AbortError') {
+                  console.log('Fallback Wikipedia API fetch error or offline:', apiErr);
                 }
               } finally {
                 if (isMounted) setIsFallbackLoading(false);
@@ -254,7 +336,29 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   };
 
   const renderTextBlock = (text: string) => {
-    const lines = text.split('\n');
+    // 긴 텍스트(클립보드 등)가 한 줄로 들어올 경우, 가독성 및 폰트 크기 확보를 위해 적절히 줄바꿈 처리
+    let processedLines: string[] = [];
+    text.split('\n').forEach(line => {
+      if (line.trim().length > 40) {
+        const words = line.trim().split(/\s+/);
+        let currentChunk: string[] = [];
+        for (let i = 0; i < words.length; i++) {
+          currentChunk.push(words[i]);
+          // 청크의 글자 수가 35자를 넘어가면 줄바꿈 (단어 단위 유지)
+          if (currentChunk.join(' ').length > 35 && i < words.length - 1) {
+            processedLines.push(currentChunk.join(' '));
+            currentChunk = [];
+          }
+        }
+        if (currentChunk.length > 0) {
+          processedLines.push(currentChunk.join(' '));
+        }
+      } else {
+        processedLines.push(line);
+      }
+    });
+
+    const lines = processedLines;
     const maxLineLength = Math.max(...lines.map(l => l.trim().length), 10);
     const dynamicFontSize = `clamp(14px, calc(164cqw / ${maxLineLength}), 40px)`;
 
@@ -426,12 +530,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 </a>
               </div>
 
-              {/* 하단: 대안 1 (Free Dictionary API 폴백 실시간 렌더링 - 자동검색 설정 활성 시에만 로드) */}
-              {isAutoSearchEnabled && (
+              {/* 하단: 대안 1 (폴백 API 실시간 렌더링 - 설정 활성 시에만 로드) */}
+              {fallbackApiType !== 'none' && (
                 isFallbackLoading ? (
                   <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
                     <span className="material-symbols-outlined text-[32px] text-primary animate-spin">sync</span>
-                    <p className="text-sm text-gray-600 font-medium">글로벌 오픈 영어 사전(Free Dictionary API)에서 의미를 가져오고 있습니다...</p>
+                    <p className="text-sm text-gray-600 font-medium">
+                      {fallbackApiType === 'wikipedia' ? '위키피디아 백과사전에서 정보를 가져오고 있습니다...' : '글로벌 오픈 영어 사전(Free Dictionary API)에서 의미를 가져오고 있습니다...'}
+                    </p>
                   </div>
                 ) : fallbackResult ? (
                   <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-sm text-left">
@@ -504,6 +610,62 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                         </div>
                       ))}
                     </div>
+                  </article>
+                ) : fallbackWikiResult ? (
+                  <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-sm text-left">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                    
+                    {lemmaInfo && (
+                      <div className="bg-indigo-50 border border-indigo-200 text-indigo-950 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs mb-1">
+                        <span className="material-symbols-outlined text-[18px] text-indigo-600 shrink-0">auto_fix</span>
+                        <span className="leading-snug">
+                          <strong className="font-semibold text-indigo-900">'{lemmaInfo.originalWord}'</strong>의 {lemmaInfo.label}인 <strong className="text-indigo-700 font-bold underline decoration-indigo-300 underline-offset-2">'{lemmaInfo.lemma}'</strong>(으)로 스마트 검색된 결과입니다.
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 text-[11px] font-bold bg-blue-100 text-blue-900 rounded-md uppercase tracking-wider">
+                          Wikipedia
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <h2 className="font-display-mobile text-display-mobile text-gray-900 tracking-tight capitalize">
+                          {fallbackWikiResult.title}
+                        </h2>
+                      </div>
+                      {fallbackWikiResult.description && (
+                        <p className="text-sm text-gray-500 italic mt-0.5">{fallbackWikiResult.description}</p>
+                      )}
+                    </div>
+
+                    <div className="h-px w-full bg-gray-200 my-1"></div>
+
+                    <div className="flex flex-col gap-3">
+                      {fallbackWikiResult.thumbnail && (
+                        <img 
+                          src={fallbackWikiResult.thumbnail.source} 
+                          alt={fallbackWikiResult.title}
+                          className="w-full max-w-[200px] rounded-lg shadow-sm self-center object-cover"
+                        />
+                      )}
+                      <p className="text-sm text-gray-800 leading-relaxed text-justify">
+                        {fallbackWikiResult.extract}
+                      </p>
+                    </div>
+
+                    {fallbackWikiResult.content_urls?.desktop?.page && (
+                      <a
+                        href={fallbackWikiResult.content_urls.desktop.page}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 text-blue-600 text-sm font-medium hover:underline inline-flex items-center gap-1 self-start"
+                      >
+                        위키백과에서 전체 읽기
+                        <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                      </a>
+                    )}
                   </article>
                 ) : (
                   <div className="bg-white/60 border border-gray-200 rounded-2xl p-6 text-center text-gray-500 text-sm">

@@ -14,7 +14,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [isParsing, setIsParsing] = useState(false);
   const [dictSize, setDictSize] = useState<number | null>(null);
   const [dictName, setDictName] = useState<string | null>(null);
-  const [autoFreeDict, setAutoFreeDict] = useState<boolean>(true);
+  const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('freedict');
   
   const workerRef = useRef<Worker | null>(null);
 
@@ -39,8 +39,18 @@ export default function SettingsModal({ onClose }: Props) {
 
     checkDictSize();
     setDictName(localStorage.getItem('lensDictName'));
-    const savedAuto = localStorage.getItem('lensDictAutoFreeDict');
-    setAutoFreeDict(savedAuto !== 'false');
+    
+    // Fallback API Type Migration & Initialization
+    const savedFallbackType = localStorage.getItem('lensDictFallbackApiType');
+    const oldSavedAuto = localStorage.getItem('lensDictAutoFreeDict');
+    
+    if (savedFallbackType) {
+      setFallbackApiType(savedFallbackType as 'freedict' | 'wikipedia' | 'none');
+    } else if (oldSavedAuto === 'false') {
+      setFallbackApiType('none');
+    } else {
+      setFallbackApiType('freedict');
+    }
 
     return () => {
       workerRef.current?.terminate();
@@ -167,28 +177,52 @@ export default function SettingsModal({ onClose }: Props) {
             </button>
           </div>
 
-          {/* Free Dictionary API 자동 검색 설정 */}
-          <label className="flex items-center justify-between bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm cursor-pointer hover:bg-surface-container-low/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={autoFreeDict}
-                onChange={(e) => {
-                  const val = e.target.checked;
-                  setAutoFreeDict(val);
-                  localStorage.setItem('lensDictAutoFreeDict', val ? 'true' : 'false');
-                }}
-                className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
-              />
-              <div>
-                <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[18px]">public</span>
-                  Free Dictionary API 자동 검색
-                </p>
-                <p className="text-xs text-on-surface-variant mt-0.5">로컬 사전에 단어가 없을 때 글로벌 오픈 사전을 실시간 자동 로드합니다.</p>
-              </div>
+          {/* 오픈 검색 API 설정 */}
+          <div className="flex flex-col gap-3 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
+            <div>
+              <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px]">public</span>
+                오프라인 검색 폴백 (Fallback API)
+              </p>
+              <p className="text-xs text-on-surface-variant mt-0.5 mb-2">로컬 사전에 단어가 없을 때 사용할 외부 검색 API를 선택합니다.</p>
             </div>
-          </label>
+            
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-surface-container-low/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={fallbackApiType === 'freedict'}
+                  onChange={(e) => {
+                    const nextType = e.target.checked ? 'freedict' : 'none';
+                    setFallbackApiType(nextType);
+                    localStorage.setItem('lensDictFallbackApiType', nextType);
+                  }}
+                  className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
+                />
+                <div>
+                  <p className="font-medium text-sm text-on-surface">Free Dictionary API (오픈 사전)</p>
+                  <p className="text-xs text-on-surface-variant">글로벌 오픈 영어 사전으로 검색합니다.</p>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-surface-container-low/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={fallbackApiType === 'wikipedia'}
+                  onChange={(e) => {
+                    const nextType = e.target.checked ? 'wikipedia' : 'none';
+                    setFallbackApiType(nextType);
+                    localStorage.setItem('lensDictFallbackApiType', nextType);
+                  }}
+                  className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
+                />
+                <div>
+                  <p className="font-medium text-sm text-on-surface">영문 위키피디아 (Wikipedia)</p>
+                  <p className="text-xs text-on-surface-variant">위키피디아의 백과사전식 요약을 검색합니다.</p>
+                </div>
+              </label>
+            </div>
+          </div>
 
           {isParsing && (
             <div className="px-2">
