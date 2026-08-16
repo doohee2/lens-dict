@@ -191,7 +191,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     };
   }, [searchWord]);
 
-  const fetchFreeDict = async (word: string, lemmasArr: LemmaInfo[], signal?: AbortSignal, isManual: boolean = true) => {
+  const fetchFreeDict = async (word: string, lemmasArr: { lemma: string; label: string }[], signal?: AbortSignal, isManual: boolean = true) => {
     if (isManual) {
       setManualSearchLoading('freedict');
       setFallbackResult(null);
@@ -236,7 +236,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     }
   };
 
-  const fetchWikipedia = async (word: string, lemmasArr: LemmaInfo[], signal?: AbortSignal, isManual: boolean = true) => {
+  const fetchWikipedia = async (word: string, lemmasArr: { lemma: string; label: string }[], signal?: AbortSignal, isManual: boolean = true) => {
     if (isManual) {
       setManualSearchLoading('wikipedia');
       setFallbackResult(null);
