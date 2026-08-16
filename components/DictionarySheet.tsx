@@ -54,6 +54,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [fallbackWikiResult, setFallbackWikiResult] = useState<WikiResult | null>(null);
   const [isFallbackLoading, setIsFallbackLoading] = useState(false);
   const [manualSearchLoading, setManualSearchLoading] = useState<'freedict' | 'wikipedia' | null>(null);
+  const [searchFailedWord, setSearchFailedWord] = useState<string | null>(null);
   const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('none');
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [sheetHeight, setSheetHeight] = useState(65);
@@ -86,6 +87,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       setFallbackWikiResult(null);
       setLemmaInfo(null);
       setIsFallbackLoading(false);
+      setSearchFailedWord(null);
       return;
     }
 
@@ -152,6 +154,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           setFallbackResult(null);
           setFallbackWikiResult(null);
           setLemmaInfo(null);
+          setSearchFailedWord(null);
 
           // Fallback API Type 확인
           let apiType = 'freedict';
@@ -192,16 +195,17 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   }, [searchWord]);
 
   const fetchFreeDict = async (word: string, lemmasArr: { lemma: string; label: string }[], signal?: AbortSignal, isManual: boolean = true) => {
+    let fallbackFound = false;
     if (isManual) {
       setManualSearchLoading('freedict');
       setFallbackResult(null);
       setFallbackWikiResult(null);
       setLemmaInfo(null);
+      setSearchFailedWord(null);
     }
     
     try {
       let res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`, { signal });
-      let fallbackFound = false;
 
       if (res.ok) {
         const data: FreeDictResult[] = await res.json();
@@ -231,22 +235,24 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     } catch (apiErr: any) {
       if (apiErr?.name !== 'AbortError') console.log('Fallback Free Dictionary API fetch error or offline:', apiErr);
     } finally {
+      if (!fallbackFound && isManual) setSearchFailedWord(word);
       if (isManual) setManualSearchLoading(null);
       else setIsFallbackLoading(false);
     }
   };
 
   const fetchWikipedia = async (word: string, lemmasArr: { lemma: string; label: string }[], signal?: AbortSignal, isManual: boolean = true) => {
+    let fallbackFound = false;
     if (isManual) {
       setManualSearchLoading('wikipedia');
       setFallbackResult(null);
       setFallbackWikiResult(null);
       setLemmaInfo(null);
+      setSearchFailedWord(null);
     }
 
     try {
       let res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(word)}`, { signal });
-      let fallbackFound = false;
 
       if (res.ok) {
         const data: WikiResult = await res.json();
@@ -276,6 +282,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     } catch (apiErr: any) {
       if (apiErr?.name !== 'AbortError') console.log('Fallback Wikipedia API fetch error or offline:', apiErr);
     } finally {
+      if (!fallbackFound && isManual) setSearchFailedWord(word);
       if (isManual) setManualSearchLoading(null);
       else setIsFallbackLoading(false);
     }
@@ -552,6 +559,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 {renderFallbackCard()}
               </div>
             )}
+            
+            {searchFailedWord && (
+              <div className="mt-4 p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                '{searchFailedWord}' 단어를 찾지 못했습니다.
+              </div>
+            )}
           </>
           ) : searchWord ? (
             <div className="flex flex-col gap-4 shrink-0 mb-4">
@@ -568,7 +581,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
                   </svg>
-                  네이버 사전에서 전체 뜻 보기
+                  네이버 사전에서 찾기
                 </a>
 
                 {/* 자동 폴백이 없을 때 나타나는 수동 검색 버튼들 */}
@@ -630,6 +643,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 ) : (
                   <></>
                 )
+              )}
+
+              {searchFailedWord && (
+                <div className="p-4 text-center text-sm text-gray-500 bg-white/60 rounded-xl border border-gray-200 shadow-sm">
+                  '{searchFailedWord}' 단어를 찾지 못했습니다.
+                </div>
               )}
             </div>
           ) : (
