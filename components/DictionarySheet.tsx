@@ -466,8 +466,9 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           {scannedTextBlock && !searchWord ? (
             renderTextBlock(scannedTextBlock)
           ) : testResult ? (
-            <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+            <>
+              <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
 
               {lemmaInfo && (
                 <div className="bg-indigo-50 border border-indigo-200 text-indigo-950 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 shadow-2xs">
