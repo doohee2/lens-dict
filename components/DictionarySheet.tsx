@@ -621,14 +621,14 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                       {fallbackApiType === 'wikipedia' ? '위키피디아 백과사전에서 정보를 가져오고 있습니다...' : '글로벌 오픈 영어 사전(Free Dictionary API)에서 의미를 가져오고 있습니다...'}
                     </p>
                   </div>
-                      </a>
-                    )}
-                  </article>
-                ) : (
+                ) : (fallbackResult || fallbackWikiResult) ? (
+                  renderFallbackCard()
+                ) : fallbackApiType !== 'none' ? (
                   <div className="bg-white/60 border border-gray-200 rounded-2xl p-6 text-center text-gray-500 text-sm">
                     <p>글로벌 오픈 사전에서도 결과를 찾지 못했거나 오프라인 상태입니다.</p>
-                    <p className="mt-1 text-xs text-gray-400">상단의 [네이버 사전에서 전체 뜻 보기] 버튼을 탭하여 네이버 웹에서 검색해보세요.</p>
                   </div>
+                ) : (
+                  <></>
                 )
               )}
             </div>
