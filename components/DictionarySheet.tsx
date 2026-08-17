@@ -16,6 +16,7 @@ interface Props {
   isMinimized: boolean;
   onMinimizedChange: (minimized: boolean) => void;
   autoFocusSignal?: number;
+  textSource?: 'ocr' | 'clipboard';
 }
 
 interface FreeDictResult {
@@ -47,7 +48,7 @@ interface WikiResult {
   };
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal, textSource = 'ocr' }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{ word: string, definition: string } | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -365,7 +366,9 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     return (
       <div className="bg-surface-container-lowest p-5 md:p-6 rounded-2xl w-full text-left shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-outline-variant flex-1 flex flex-col overflow-hidden @container">
         <div className="flex justify-between items-center mb-3 pb-3 border-b border-outline-variant shrink-0">
-          <h3 className="font-bold text-primary-fixed-dim">OCR 스캔 텍스트 (단어 탭하여 선택)</h3>
+          <h3 className="font-bold text-primary-fixed-dim">
+            {textSource === 'clipboard' ? '클립보드 텍스트 (단어 탭하여 선택)' : 'OCR 스캔 텍스트 (단어 탭하여 선택)'}
+          </h3>
           <button
             onClick={() => {
               onClearScannedText();
@@ -474,7 +477,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
             renderTextBlock(scannedTextBlock)
           ) : testResult ? (
             <>
-              <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 mb-4 shadow-sm">
+              <article className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shrink-0 shadow-sm">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
 
               {lemmaInfo && (
@@ -499,137 +502,36 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 dangerouslySetInnerHTML={{ __html: testResult.definition }}
               ></div>
 
-              <div className="mt-6 flex flex-col gap-3">
-                <a
-                  href={`https://dict.naver.com/search.dict?dicType=en&query=${encodeURIComponent(searchWord)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center h-12 px-6 bg-[#03c75a] text-white font-bold text-[15px] rounded-xl gap-2 hover:bg-[#02b351] transition-colors shadow-sm w-full"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
-                  </svg>
-                  네이버 사전에서 찾기
-                </a>
-
-                <div className="flex gap-2 w-full">
-                  <button
-                    onClick={async () => {
-                      const trimmed = searchWord.trim();
-                      if (!trimmed) return;
-                      const lemmas = typeof window !== 'undefined' ? (window as any).lemmatizeWord?.(trimmed) || [] : [];
-                      await fetchFreeDict(trimmed, lemmas, undefined, true);
-                      setTimeout(() => heightRef.current && setSheetHeight(90), 100);
-                    }}
-                    disabled={manualSearchLoading !== null}
-                    className="flex-1 inline-flex items-center justify-center h-12 px-2 bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-sm rounded-xl gap-1.5 hover:bg-amber-100 transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    {manualSearchLoading === 'freedict' ? (
-                      <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[16px]">public</span>
-                    )}
-                    오픈 사전 검색
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const trimmed = searchWord.trim();
-                      if (!trimmed) return;
-                      const lemmas = typeof window !== 'undefined' ? (window as any).lemmatizeWord?.(trimmed) || [] : [];
-                      await fetchWikipedia(trimmed, lemmas, undefined, true);
-                      setTimeout(() => heightRef.current && setSheetHeight(90), 100);
-                    }}
-                    disabled={manualSearchLoading !== null}
-                    className="flex-1 inline-flex items-center justify-center h-12 px-2 bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-sm rounded-xl gap-1.5 hover:bg-blue-100 transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    {manualSearchLoading === 'wikipedia' ? (
-                      <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[16px]">public</span>
-                    )}
-                    영문 위키피디아
-                  </button>
-                </div>
-              </div>
+              {renderActionButtons()}
             </article>
 
-            {/* Manual Fallback Result Rendering when local result exists */}
+            {/* 수동/자동 폴백 API 검색 결과 렌더링 */}
             {(fallbackResult || fallbackWikiResult) && (
-              <div className="mt-4 mb-4">
+              <div className="mt-1">
                 {renderFallbackCard()}
               </div>
             )}
             
             {searchFailedInfo && (
-              <div className="mt-4 p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+              <div className="mt-1 p-3 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
                 {searchFailedInfo.source === 'freedict' ? '오픈 사전에서 ' : '영문 위키에서 '}
-                '{searchFailedInfo.word}' 단어를 찾지 못했습니다.
+                &lsquo;{searchFailedInfo.word}&rsquo; 단어를 찾지 못했습니다.
               </div>
             )}
           </>
           ) : searchWord ? (
-            <div className="flex flex-col gap-4 shrink-0 mb-4">
-              {/* 상단: 네이버 사전 및 수동 검색 버튼 */}
-              <div className="flex flex-col gap-3 shrink-0 mb-2">
-                <div className="bg-surface-container py-3 px-4 rounded-xl text-center shadow-xs mb-1">
-                  <p className="text-on-surface-variant text-sm font-medium">로컬 사전에 등록되지 않은 단어입니다.</p>
-                </div>
-                
-                <a
-                  href={`https://dict.naver.com/search.dict?dicType=en&query=${encodeURIComponent(searchWord)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center h-14 px-6 bg-[#03c75a] text-white font-bold text-[17px] rounded-xl gap-2 hover:bg-[#02b351] transition-colors shadow-sm w-full"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
-                  </svg>
-                  네이버 사전에서 찾기
-                </a>
-
-                {/* 수동 검색 버튼들 (항상 표시) */}
-                <div className="flex gap-2 w-full">
-                  <button
-                    onClick={async () => {
-                      const trimmed = searchWord.trim();
-                      if (!trimmed) return;
-                      const lemmas = typeof window !== 'undefined' ? (window as any).lemmatizeWord?.(trimmed) || [] : [];
-                      await fetchFreeDict(trimmed, lemmas, undefined, true);
-                    }}
-                    disabled={manualSearchLoading !== null}
-                    className="flex-1 inline-flex items-center justify-center h-12 px-2 bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-sm rounded-xl gap-1.5 hover:bg-amber-100 transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    {manualSearchLoading === 'freedict' ? (
-                      <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[16px]">public</span>
-                    )}
-                    오픈 사전 검색
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const trimmed = searchWord.trim();
-                      if (!trimmed) return;
-                      const lemmas = typeof window !== 'undefined' ? (window as any).lemmatizeWord?.(trimmed) || [] : [];
-                      await fetchWikipedia(trimmed, lemmas, undefined, true);
-                    }}
-                    disabled={manualSearchLoading !== null}
-                    className="flex-1 inline-flex items-center justify-center h-12 px-2 bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-sm rounded-xl gap-1.5 hover:bg-blue-100 transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    {manualSearchLoading === 'wikipedia' ? (
-                      <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[16px]">public</span>
-                    )}
-                    영문 위키피디아
-                  </button>
-                </div>
+            <div className="flex flex-col gap-2 shrink-0">
+              {/* 로컬 미등록 안내 */}
+              <div className="bg-surface-container py-3 px-4 rounded-xl text-center shadow-xs">
+                <p className="text-on-surface-variant text-sm font-medium">로컬 사전에 등록되지 않은 단어입니다.</p>
               </div>
 
-              {/* 하단: 대안 1 (폴백 API 실시간 렌더링 - 설정 활성 시에만 로드) */}
+              {renderActionButtons()}
+
+              {/* 자동 폴백 API 결과 (설정 활성 시에만 로드) */}
               {(fallbackApiType !== 'none' || fallbackResult || fallbackWikiResult) && (
                 isFallbackLoading ? (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
                     <span className="material-symbols-outlined text-[32px] text-primary animate-spin">sync</span>
                     <p className="text-sm text-gray-600 font-medium">
                       {fallbackApiType === 'wikipedia' ? '위키피디아 백과사전에서 정보를 가져오고 있습니다...' : '글로벌 오픈 영어 사전(Free Dictionary API)에서 의미를 가져오고 있습니다...'}
@@ -643,9 +545,9 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
               )}
 
               {searchFailedInfo && (
-                <div className="p-4 text-center text-sm text-gray-500 bg-white/60 rounded-xl border border-gray-200 shadow-sm mt-4">
+                <div className="p-3 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
                   {searchFailedInfo.source === 'freedict' ? '오픈 사전에서 ' : '영문 위키에서 '}
-                  '{searchFailedInfo.word}' 단어를 찾지 못했습니다.
+                  &lsquo;{searchFailedInfo.word}&rsquo; 단어를 찾지 못했습니다.
                 </div>
               )}
             </div>
@@ -658,6 +560,64 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       </section>
     </>
   );
+
+  /* ── 공용 액션 버튼 그룹 (네이버 + 오픈사전 + 위키) ── */
+  function renderActionButtons() {
+    return (
+      <div className="mt-4 flex flex-col gap-3">
+        <a
+          href={`https://dict.naver.com/search.dict?dicType=en&query=${encodeURIComponent(searchWord)}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center justify-center h-12 px-6 bg-[#03c75a] text-white font-bold text-[15px] rounded-xl gap-2 hover:bg-[#02b351] transition-colors shadow-sm w-full"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
+          </svg>
+          네이버 사전에서 찾기
+        </a>
+
+        <div className="flex gap-2 w-full">
+          <button
+            onClick={async () => {
+              const trimmed = searchWord.trim();
+              if (!trimmed) return;
+              const lemmas = typeof window !== 'undefined' ? (window as any).lemmatizeWord?.(trimmed) || [] : [];
+              await fetchFreeDict(trimmed, lemmas, undefined, true);
+              setTimeout(() => heightRef.current && setSheetHeight(90), 100);
+            }}
+            disabled={manualSearchLoading !== null}
+            className="flex-1 inline-flex items-center justify-center h-12 px-2 bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-sm rounded-xl gap-1.5 hover:bg-amber-100 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {manualSearchLoading === 'freedict' ? (
+              <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+            ) : (
+              <span className="material-symbols-outlined text-[16px]">public</span>
+            )}
+            오픈 사전 검색
+          </button>
+          <button
+            onClick={async () => {
+              const trimmed = searchWord.trim();
+              if (!trimmed) return;
+              const lemmas = typeof window !== 'undefined' ? (window as any).lemmatizeWord?.(trimmed) || [] : [];
+              await fetchWikipedia(trimmed, lemmas, undefined, true);
+              setTimeout(() => heightRef.current && setSheetHeight(90), 100);
+            }}
+            disabled={manualSearchLoading !== null}
+            className="flex-1 inline-flex items-center justify-center h-12 px-2 bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-sm rounded-xl gap-1.5 hover:bg-blue-100 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {manualSearchLoading === 'wikipedia' ? (
+              <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+            ) : (
+              <span className="material-symbols-outlined text-[16px]">public</span>
+            )}
+            영문 위키피디아
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   function renderFallbackCard() {
     if (fallbackResult) {

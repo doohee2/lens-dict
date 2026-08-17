@@ -14,6 +14,7 @@ export default function Home() {
   const [autoFocusSignal, setAutoFocusSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [textSource, setTextSource] = useState<'ocr' | 'clipboard'>('ocr');
 
   const handleClearScannedText = () => {
     setGlobalOCRText('');
@@ -33,6 +34,7 @@ export default function Home() {
         const text = await navigator.clipboard.readText();
         if (text && text.trim().length > 0) {
           setGlobalOCRText(text.trim());
+          setTextSource('clipboard');
           setIsSheetMinimized(false);
           return;
         }
@@ -46,6 +48,7 @@ export default function Home() {
     // 비동기 팝업 없이 즉각적으로 실행될 경우, React 렌더링 틱과 CSS transition이 경합하여 
     // 바텀시트가 열리지 않고 닫힌(minimized) 상태로 렌더링되는 현상을 방지하기 위해 100ms의 마이크로 딜레이를 줍니다.
     setGlobalOCRText(' ');
+    setTextSource('clipboard');
     setTimeout(() => {
       setIsSheetMinimized(false);
       setAutoFocusSignal(prev => prev + 1); // 빈 텍스트 상태로 열릴 때는 즉각적인 검색을 위해 인풋 박스에 포커스
@@ -62,6 +65,7 @@ export default function Home() {
         <CameraViewfinder 
           onTextScanned={(text) => {
             setGlobalOCRText(text);
+            setTextSource('ocr');
             setIsSheetMinimized(false);
           }} 
           resetCameraSignal={resetCameraSignal} 
@@ -74,6 +78,7 @@ export default function Home() {
           isMinimized={isSheetMinimized}
           onMinimizedChange={setIsSheetMinimized}
           autoFocusSignal={autoFocusSignal}
+          textSource={textSource}
         />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
