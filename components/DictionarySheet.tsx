@@ -54,7 +54,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [fallbackWikiResult, setFallbackWikiResult] = useState<WikiResult | null>(null);
   const [isFallbackLoading, setIsFallbackLoading] = useState(false);
   const [manualSearchLoading, setManualSearchLoading] = useState<'freedict' | 'wikipedia' | null>(null);
-  const [searchFailedWord, setSearchFailedWord] = useState<string | null>(null);
+  const [searchFailedInfo, setSearchFailedInfo] = useState<{ word: string; source: 'freedict' | 'wikipedia' } | null>(null);
   const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('none');
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [sheetHeight, setSheetHeight] = useState(65);
@@ -87,7 +87,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       setFallbackWikiResult(null);
       setLemmaInfo(null);
       setIsFallbackLoading(false);
-      setSearchFailedWord(null);
+      setSearchFailedInfo(null);
       return;
     }
 
@@ -154,7 +154,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           setFallbackResult(null);
           setFallbackWikiResult(null);
           setLemmaInfo(null);
-          setSearchFailedWord(null);
+          setSearchFailedInfo(null);
 
           // Fallback API Type 확인
           let apiType = 'freedict';
@@ -201,7 +201,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       setFallbackResult(null);
       setFallbackWikiResult(null);
       setLemmaInfo(null);
-      setSearchFailedWord(null);
+      setSearchFailedInfo(null);
     }
     
     try {
@@ -235,7 +235,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     } catch (apiErr: any) {
       if (apiErr?.name !== 'AbortError') console.log('Fallback Free Dictionary API fetch error or offline:', apiErr);
     } finally {
-      if (!fallbackFound && isManual) setSearchFailedWord(word);
+      if (!fallbackFound) setSearchFailedInfo({ word, source: 'freedict' });
       if (isManual) setManualSearchLoading(null);
       else setIsFallbackLoading(false);
     }
@@ -248,7 +248,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       setFallbackResult(null);
       setFallbackWikiResult(null);
       setLemmaInfo(null);
-      setSearchFailedWord(null);
+      setSearchFailedInfo(null);
     }
 
     try {
@@ -282,7 +282,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
     } catch (apiErr: any) {
       if (apiErr?.name !== 'AbortError') console.log('Fallback Wikipedia API fetch error or offline:', apiErr);
     } finally {
-      if (!fallbackFound && isManual) setSearchFailedWord(word);
+      if (!fallbackFound) setSearchFailedInfo({ word, source: 'wikipedia' });
       if (isManual) setManualSearchLoading(null);
       else setIsFallbackLoading(false);
     }
@@ -560,9 +560,10 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
               </div>
             )}
             
-            {searchFailedWord && (
+            {searchFailedInfo && (
               <div className="mt-4 p-4 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                '{searchFailedWord}' 단어를 찾지 못했습니다.
+                {searchFailedInfo.source === 'freedict' ? '오픈 사전에서 ' : '영문 위키에서 '}
+                '{searchFailedInfo.word}' 단어를 찾지 못했습니다.
               </div>
             )}
           </>
@@ -636,18 +637,15 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                   </div>
                 ) : (fallbackResult || fallbackWikiResult) ? (
                   renderFallbackCard()
-                ) : fallbackApiType !== 'none' ? (
-                  <div className="bg-white/60 border border-gray-200 rounded-2xl p-6 text-center text-gray-500 text-sm">
-                    <p>글로벌 오픈 사전에서도 결과를 찾지 못했거나 오프라인 상태입니다.</p>
-                  </div>
                 ) : (
                   <></>
                 )
               )}
 
-              {searchFailedWord && (
-                <div className="p-4 text-center text-sm text-gray-500 bg-white/60 rounded-xl border border-gray-200 shadow-sm">
-                  '{searchFailedWord}' 단어를 찾지 못했습니다.
+              {searchFailedInfo && (
+                <div className="p-4 text-center text-sm text-gray-500 bg-white/60 rounded-xl border border-gray-200 shadow-sm mt-4">
+                  {searchFailedInfo.source === 'freedict' ? '오픈 사전에서 ' : '영문 위키에서 '}
+                  '{searchFailedInfo.word}' 단어를 찾지 못했습니다.
                 </div>
               )}
             </div>
