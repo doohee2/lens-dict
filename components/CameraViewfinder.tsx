@@ -40,6 +40,7 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
+  const [ocrEngine, setOcrEngine] = useState<'tesseract' | 'google' | null>(null);
   const [isFrozen, setIsFrozen] = useState(false);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [fullFrameImageUrl, setFullFrameImageUrl] = useState<string | null>(null);
@@ -114,7 +115,17 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
   const captureAndScan = async () => {
     if (!videoRef.current || !guideRef.current || !containerRef.current || isFrozen) return;
     
+    const useGoogle = localStorage.getItem('lensDictUseGoogleOCR') === 'true';
+    const googleKey = localStorage.getItem('lensDictGoogleApiKey') || '';
+
+    if (useGoogle && !googleKey) {
+      alert("구글 OCR API 키가 설정되지 않았습니다. 톱니바퀴 설정 화면에서 키를 입력해주세요.");
+      return;
+    }
+
     setIsScanning(true);
+    setOcrEngine(useGoogle ? 'google' : 'tesseract');
+
     try {
       const video = videoRef.current;
       video.pause(); // Freeze the camera stream
@@ -222,34 +233,76 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
 
       // Draw processed image back to OCR canvas
       ocrCtx.putImageData(ocrImageData, 0, 0);
-      // [#4] PNG lossless — no JPEG compression artifacts on letter edges
-      const dataUrl = ocrCanvas.toDataURL('image/png');
       
-      // Tesseract OCR — 영단어 검색에 최적화된 문자 허용 목록
-      // 불필요한 특수문자(괄호, 수학기호 등)를 제거하여 후보 문자군을 축소 → 오인식 확률 감소
-      const worker = await Tesseract.createWorker('eng');
-      await worker.setParameters({
-        tessedit_char_whitelist: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '-.,",
-        // [#6] PSM 6: Assume a single uniform block of text
-        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-        // 단어 간 공백을 원본 그대로 보존 → 터치 검색 시 단어 경계 정확도 향상
-        preserve_interword_spaces: '1',
-      });
-      const { data: { text } } = await worker.recognize(dataUrl);
-      await worker.terminate(); // CRITICAL: Prevent Safari memory crash
+      let cleanText = '';
+
+      if (useGoogle) {
+        // [Google Cloud Vision API Direct Fetch]
+        // 구글 서버 전송 용량 최적화 (PNG 대신 JPEG 품질 80% 적용)
+        const dataUrl = ocrCanvas.toDataURL('image/jpeg', 0.8);
+        const base64Image = dataUrl.split(',')[1];
+
+        const requestBody = {
+          requests: [
+            {
+              image: { content: base64Image },
+              features: [{ type: 'DOCUMENT_TEXT_DETECTION' }]
+            }
+          ]
+        };
+
+        const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${googleKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`API 통신 에러: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        const textAnnotations = responseData.responses?.[0]?.textAnnotations;
+        const text = textAnnotations && textAnnotations.length > 0 ? textAnnotations[0].description : '';
+        cleanText = text.trim();
+      } else {
+        // [#4] PNG lossless — no JPEG compression artifacts on letter edges
+        const dataUrl = ocrCanvas.toDataURL('image/png');
+        
+        // Tesseract OCR — 영단어 검색에 최적화된 문자 허용 목록
+        // 불필요한 특수문자(괄호, 수학기호 등)를 제거하여 후보 문자군을 축소 → 오인식 확률 감소
+        const worker = await Tesseract.createWorker('eng');
+        await worker.setParameters({
+          tessedit_char_whitelist: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 '-.,",
+          // [#6] PSM 6: Assume a single uniform block of text
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+          // 단어 간 공백을 원본 그대로 보존 → 터치 검색 시 단어 경계 정확도 향상
+          preserve_interword_spaces: '1',
+        });
+        const { data: { text } } = await worker.recognize(dataUrl);
+        await worker.terminate(); // CRITICAL: Prevent Safari memory crash
+        
+        cleanText = text.trim();
+      }
       
       // Preserve newlines for full block OCR
-      const cleanText = text.trim();
       if (cleanText && onTextScanned) {
         onTextScanned(cleanText);
+      } else if (!cleanText) {
+        alert('텍스트를 인식하지 못했습니다. 밝은 곳에서 초점을 맞춰 다시 촬영해주세요.');
+        if (videoRef.current) videoRef.current.play();
+        setIsFrozen(false);
       }
     } catch (e) {
       console.error('OCR Error:', e);
       // If error, unfreeze automatically
       if (videoRef.current) videoRef.current.play();
       setIsFrozen(false);
+      alert(`OCR 오류가 발생했습니다: ${e instanceof Error ? e.message : '알 수 없는 오류'}`);
     } finally {
       setIsScanning(false);
+      setOcrEngine(null);
     }
   };
 
@@ -492,6 +545,23 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
 
       {/* Camera Controls */}
       <div className="absolute top-[60%] -translate-y-1/2 left-0 w-full flex justify-center items-center gap-8 z-20">
+        {/* Loading Message Overlay */}
+        {isScanning && ocrEngine && (
+          <div className="absolute -top-16 bg-black/70 backdrop-blur-md px-5 py-2.5 rounded-full shadow-xl animate-fade-in text-center flex flex-col items-center gap-1 z-30">
+            {ocrEngine === 'google' ? (
+              <>
+                <span className="text-primary-fixed-dim text-[13px] md:text-sm font-bold">✨ 초고속 스캔 중...</span>
+                <span className="text-[10px] md:text-xs text-white/80 font-medium">Google Cloud Vision 엔진</span>
+              </>
+            ) : (
+              <>
+                <span className="text-white text-[13px] md:text-sm font-bold">스캔 중...</span>
+                <span className="text-[10px] md:text-xs text-white/70 font-medium">Tesseract 내장 엔진</span>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Shutter Button */}
         {!isFrozen ? (
           <div className="flex items-center justify-center gap-6 md:gap-10 w-full max-w-[420px] px-4">

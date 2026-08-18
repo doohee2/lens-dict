@@ -15,6 +15,8 @@ export default function SettingsModal({ onClose }: Props) {
   const [dictSize, setDictSize] = useState<number | null>(null);
   const [dictName, setDictName] = useState<string | null>(null);
   const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('freedict');
+  const [googleApiKey, setGoogleApiKey] = useState('');
+  const [useGoogleOCR, setUseGoogleOCR] = useState(false);
   
   const workerRef = useRef<Worker | null>(null);
 
@@ -52,10 +54,19 @@ export default function SettingsModal({ onClose }: Props) {
       setFallbackApiType('freedict');
     }
 
+    setGoogleApiKey(localStorage.getItem('lensDictGoogleApiKey') || '');
+    setUseGoogleOCR(localStorage.getItem('lensDictUseGoogleOCR') === 'true');
+
     return () => {
       workerRef.current?.terminate();
     };
   }, []);
+
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setGoogleApiKey(val);
+    localStorage.setItem('lensDictGoogleApiKey', val);
+  };
 
   const checkDictSize = async () => {
     try {
@@ -111,13 +122,13 @@ export default function SettingsModal({ onClose }: Props) {
           <span className="material-symbols-outlined">close</span>
         </button>
         
-        <h2 className="text-2xl font-bold text-primary-fixed-dim mb-6 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-primary-fixed-dim mb-3 flex items-center gap-2">
           <span className="material-symbols-outlined">database</span>
           사전 데이터 관리
         </h2>
         
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
             <div className="flex justify-between items-center w-full">
               {dictName ? (
                 <p className="font-bold text-primary-fixed-dim text-lg w-full text-center py-2">{dictName}</p>
@@ -143,8 +154,8 @@ export default function SettingsModal({ onClose }: Props) {
             </div>
           </div>
 
-          <div className="bg-surface-container-highest p-4 rounded-xl border border-outline-variant/50">
-            <h3 className="font-semibold text-on-surface mb-2">스타딕 형식의 사전 파일(zip)을 지원합니다.</h3>
+          <div className="bg-surface-container-highest p-3 rounded-xl border border-outline-variant/50">
+            <h3 className="font-semibold text-sm text-on-surface mb-1">스타딕 형식의 사전 파일(zip)을 지원합니다.</h3>
             <input 
               type="file" 
               accept=".zip" 
@@ -160,7 +171,7 @@ export default function SettingsModal({ onClose }: Props) {
           </div>
 
           {/* PWA 오프라인 보안 캐시 초기화 방어 구역 */}
-          <div className="flex items-center justify-between bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
+          <div className="flex items-center justify-between bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
             <div>
               <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[18px]">security</span>
@@ -177,18 +188,48 @@ export default function SettingsModal({ onClose }: Props) {
             </button>
           </div>
 
+          {/* 구글 OCR API 설정 */}
+          <div className="flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">key</span>
+                  구글 Cloud Vision API 설정
+                </p>
+                <input
+                  type="checkbox"
+                  checked={useGoogleOCR}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setUseGoogleOCR(checked);
+                    localStorage.setItem('lensDictUseGoogleOCR', String(checked));
+                  }}
+                  className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
+                />
+              </div>
+              <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">고성능 구글 OCR을 사용하기 위한 API 키를 입력하세요. 키는 로컬 기기에만 저장됩니다.</p>
+            </div>
+            <input
+              type="password"
+              placeholder="API Key 입력 (선택사항)"
+              value={googleApiKey}
+              onChange={handleApiKeyChange}
+              className="w-full text-sm p-2 rounded-lg bg-surface-container border border-outline-variant focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+            />
+          </div>
+
           {/* 오픈 검색 API 설정 */}
-          <div className="flex flex-col gap-3 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
+          <div className="flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
             <div>
               <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[18px]">public</span>
                 오프라인 검색 폴백 (Fallback API)
               </p>
-              <p className="text-xs text-on-surface-variant mt-0.5 mb-2">로컬 사전에 단어가 없을 때 사용할 외부 검색 API를 선택합니다.</p>
+              <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">로컬 사전에 단어가 없을 때 사용할 외부 검색 API를 선택합니다.</p>
             </div>
             
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-surface-container-low/50 transition-colors">
+            <div className="flex flex-col gap-1">
+              <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low/50 transition-colors">
                 <input
                   type="checkbox"
                   checked={fallbackApiType === 'freedict'}
@@ -201,11 +242,11 @@ export default function SettingsModal({ onClose }: Props) {
                 />
                 <div>
                   <p className="font-medium text-sm text-on-surface">Free Dictionary API (오픈 사전)</p>
-                  <p className="text-xs text-on-surface-variant">글로벌 오픈 영어 사전으로 검색합니다.</p>
+                  <p className="text-[11px] text-on-surface-variant">글로벌 오픈 영어 사전으로 검색합니다.</p>
                 </div>
               </label>
 
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-surface-container-low/50 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low/50 transition-colors">
                 <input
                   type="checkbox"
                   checked={fallbackApiType === 'wikipedia'}
@@ -218,7 +259,7 @@ export default function SettingsModal({ onClose }: Props) {
                 />
                 <div>
                   <p className="font-medium text-sm text-on-surface">영문 위키피디아 (Wikipedia)</p>
-                  <p className="text-xs text-on-surface-variant">위키피디아의 백과사전식 요약을 검색합니다.</p>
+                  <p className="text-[11px] text-on-surface-variant">위키피디아의 백과사전식 요약을 검색합니다.</p>
                 </div>
               </label>
             </div>
