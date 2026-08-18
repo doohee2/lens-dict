@@ -519,7 +519,7 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
 
 
       {/* Scan Guide Overlay */}
-      <div ref={guideRef} className={`absolute top-[20%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] h-[24%] max-w-[400px] border-2 rounded-2xl flex items-center justify-center z-10 transition-colors duration-300 ${isFrozen ? 'border-error shadow-[0_0_0_9999px_rgba(0,0,0,0.65),0_0_20px_rgba(186,26,26,0.5)]' : 'border-primary-fixed-dim shadow-[0_0_30px_rgba(3,199,90,0.15)]'}`}>
+      <div ref={guideRef} className={`absolute top-[8%] left-1/2 -translate-x-1/2 w-[85%] aspect-square max-w-[400px] border-2 rounded-2xl flex items-center justify-center z-10 transition-colors duration-300 ${isFrozen ? 'border-error shadow-[0_0_0_9999px_rgba(0,0,0,0.65),0_0_20px_rgba(186,26,26,0.5)]' : 'border-primary-fixed-dim shadow-[0_0_30px_rgba(3,199,90,0.15)]'}`}>
         {/* Corner accents */}
         <div className={`absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${isFrozen ? 'border-error' : 'border-primary-container'}`}></div>
         <div className={`absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${isFrozen ? 'border-error' : 'border-primary-container'}`}></div>
