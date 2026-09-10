@@ -17,6 +17,7 @@ interface Props {
   onMinimizedChange: (minimized: boolean) => void;
   autoFocusSignal?: number;
   textSource?: 'ocr' | 'clipboard';
+  onOpenHistory: () => void;
 }
 
 interface FreeDictResult {
@@ -48,7 +49,7 @@ interface WikiResult {
   };
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal, textSource = 'ocr' }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal, textSource = 'ocr', onOpenHistory }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{ word: string, definition: string } | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -369,16 +370,25 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           <h3 className="font-bold text-primary-fixed-dim">
             {textSource === 'clipboard' ? '클립보드 텍스트 (단어 탭하여 선택)' : 'OCR 스캔 텍스트 (단어 탭하여 선택)'}
           </h3>
-          <button
-            onClick={() => {
-              onClearScannedText();
-              onMinimizedChange(true);
-            }}
-            title="스캔 텍스트 삭제 및 카메라 즉시 촬영 모드로 전환"
-            className="text-on-surface-variant hover:text-error transition-colors p-1 -mr-1"
-          >
-            <span className="material-symbols-outlined">delete</span>
-          </button>
+          <div className="flex gap-1 -mr-1">
+            <button
+              onClick={onOpenHistory}
+              title="히스토리 열기"
+              className="text-on-surface-variant hover:text-primary transition-colors p-1"
+            >
+              <span className="material-symbols-outlined">history</span>
+            </button>
+            <button
+              onClick={() => {
+                onClearScannedText();
+                onMinimizedChange(true);
+              }}
+              title="스캔 텍스트 삭제 및 카메라 즉시 촬영 모드로 전환"
+              className="text-on-surface-variant hover:text-error transition-colors p-1"
+            >
+              <span className="material-symbols-outlined">delete</span>
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-auto w-full">
           <div className="flex flex-col justify-start items-start text-left min-w-max pb-4 pr-4">

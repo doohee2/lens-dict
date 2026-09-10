@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TopAppBar from '../components/TopAppBar';
 import CameraViewfinder from '../components/CameraViewfinder';
 import DictionarySheet from '../components/DictionarySheet';
 import SettingsModal from '../components/SettingsModal';
 import AboutModal from '../components/AboutModal';
+import HistoryModal, { HistoryItem } from '../components/HistoryModal';
 
 export default function Home() {
   const [globalOCRText, setGlobalOCRText] = useState('');
@@ -14,7 +15,31 @@ export default function Home() {
   const [autoFocusSignal, setAutoFocusSignal] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [textSource, setTextSource] = useState<'ocr' | 'clipboard'>('ocr');
+
+  useEffect(() => {
+    if (globalOCRText && globalOCRText.trim().length > 0) {
+      const saved = localStorage.getItem('lensDictHistory');
+      let history: HistoryItem[] = saved ? JSON.parse(saved) : [];
+      
+      const trimmedText = globalOCRText.trim();
+      
+      if (history.length === 0 || history[0].text !== trimmedText) {
+        history = history.filter(h => h.text !== trimmedText);
+        
+        const newItem: HistoryItem = {
+          id: Date.now().toString(),
+          text: trimmedText,
+          source: textSource,
+          timestamp: new Date().toISOString()
+        };
+        history.unshift(newItem);
+        if (history.length > 30) history = history.slice(0, 30);
+        localStorage.setItem('lensDictHistory', JSON.stringify(history));
+      }
+    }
+  }, [globalOCRText, textSource]);
 
   const handleClearScannedText = () => {
     setGlobalOCRText('');
@@ -79,10 +104,22 @@ export default function Home() {
           onMinimizedChange={setIsSheetMinimized}
           autoFocusSignal={autoFocusSignal}
           textSource={textSource}
+          onOpenHistory={() => setIsHistoryOpen(true)}
         />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
       {isAboutOpen && <AboutModal onClose={() => setIsAboutOpen(false)} />}
+      {isHistoryOpen && (
+        <HistoryModal 
+          onClose={() => setIsHistoryOpen(false)} 
+          onSelect={(item) => {
+            setGlobalOCRText(item.text);
+            setTextSource(item.source);
+            setIsSheetMinimized(false);
+            setAutoFocusSignal(prev => prev + 1);
+          }} 
+        />
+      )}
     </>
   );
 }
