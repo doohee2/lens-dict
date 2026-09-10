@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
 import { getLemmas } from '../lib/lemmatizer';
+import { extractKoreanRoot } from '../lib/koreanLemmatizer';
 
 interface LemmaInfo {
   originalWord: string;
@@ -399,7 +400,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 style={{ fontSize: dynamicFontSize }}
               >
                 {line.split(' ').map((word, j) => {
-                  const cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
+                  const cleanWord = extractKoreanRoot(word);
                   return (
                     <span
                       key={j}
