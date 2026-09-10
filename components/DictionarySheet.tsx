@@ -90,15 +90,27 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           }]
         })
       });
+      
       const data = await response.json();
+      
+      if (!response.ok) {
+        // HTTP 상태 코드가 2xx가 아닌 경우 에러 상세 정보 추출
+        const errorMsg = data.error?.message || `HTTP 에러: ${response.status}`;
+        console.error('[Gemini API Error]', data);
+        alert(`번역 API 오류: ${errorMsg}`);
+        return;
+      }
+
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         onUpdateScannedText(data.candidates[0].content.parts[0].text);
       } else {
-        alert('번역 결과를 가져오지 못했습니다.');
+        console.error('[Gemini API Unexpected Response]', data);
+        alert('번역 결과를 가져오지 못했습니다. (응답 형식 오류)');
       }
     } catch (e) {
-      console.error(e);
-      alert('번역 중 오류가 발생했습니다.');
+      const errorMessage = e instanceof Error ? e.message : '알 수 없는 네트워크 오류';
+      console.error('[Gemini API Network Error]', e);
+      alert(`번역 중 네트워크 오류가 발생했습니다:\n${errorMessage}`);
     } finally {
       setIsTranslating(false);
     }
