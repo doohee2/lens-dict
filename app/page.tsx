@@ -17,6 +17,13 @@ export default function Home() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [textSource, setTextSource] = useState<'ocr' | 'clipboard'>('ocr');
+  const [useGeminiTranslate, setUseGeminiTranslate] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+
+  useEffect(() => {
+    setUseGeminiTranslate(localStorage.getItem('lensDictUseGeminiTranslate') === 'true');
+    setGeminiApiKey(localStorage.getItem('lensDictGeminiApiKey') || '');
+  }, [isSettingsOpen]);
 
   useEffect(() => {
     if (globalOCRText && globalOCRText.trim().length > 0) {
@@ -100,11 +107,14 @@ export default function Home() {
         <DictionarySheet 
           scannedTextBlock={globalOCRText} 
           onClearScannedText={handleClearScannedText} 
+          onUpdateScannedText={setGlobalOCRText}
           isMinimized={isSheetMinimized}
           onMinimizedChange={setIsSheetMinimized}
           autoFocusSignal={autoFocusSignal}
           textSource={textSource}
           onOpenHistory={() => setIsHistoryOpen(true)}
+          useGeminiTranslate={useGeminiTranslate}
+          geminiApiKey={geminiApiKey}
         />
       </main>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}

@@ -14,11 +14,14 @@ interface LemmaInfo {
 interface Props {
   scannedTextBlock: string;
   onClearScannedText: () => void;
+  onUpdateScannedText: (text: string) => void;
   isMinimized: boolean;
   onMinimizedChange: (minimized: boolean) => void;
   autoFocusSignal?: number;
   textSource?: 'ocr' | 'clipboard';
   onOpenHistory: () => void;
+  useGeminiTranslate?: boolean;
+  geminiApiKey?: string;
 }
 
 interface FreeDictResult {
@@ -50,7 +53,7 @@ interface WikiResult {
   };
 }
 
-export default function DictionarySheet({ scannedTextBlock, onClearScannedText, isMinimized, onMinimizedChange, autoFocusSignal, textSource = 'ocr', onOpenHistory }: Props) {
+export default function DictionarySheet({ scannedTextBlock, onClearScannedText, onUpdateScannedText, isMinimized, onMinimizedChange, autoFocusSignal, textSource = 'ocr', onOpenHistory, useGeminiTranslate, geminiApiKey }: Props) {
   const [searchWord, setSearchWord] = useState('');
   const [testResult, setTestResult] = useState<{ word: string, definition: string } | null>(null);
   const [fallbackResult, setFallbackResult] = useState<FreeDictResult | null>(null);
@@ -61,8 +64,45 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('none');
   const [lemmaInfo, setLemmaInfo] = useState<LemmaInfo | null>(null);
   const [sheetHeight, setSheetHeight] = useState(65);
+  const [lemmatizedSearchWord, setLemmatizedSearchWord] = useState<string | null>(null);
+  const [lemmaSource, setLemmaSource] = useState<string | null>(null); // e.g. "verb" or "noun"
+  const [isTranslating, setIsTranslating] = useState(false);
+
   const heightRef = useRef(65);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const handleTranslate = async () => {
+    if (!geminiApiKey || !scannedTextBlock.trim()) return;
+    setIsTranslating(true);
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `OCR 로 인식된/클립보드로 입력된 텍스트의 내용을 번역해줘. (영어일 때는 한글로, 한글일 때는 영어로 번역하는 거야.)\n\n[텍스트]\n${scannedTextBlock}`
+            }]
+          }]
+        })
+      });
+      const data = await response.json();
+      if (data.candidates && data.candidates[0].content.parts[0].text) {
+        onUpdateScannedText(data.candidates[0].content.parts[0].text);
+      } else {
+        alert('번역 결과를 가져오지 못했습니다.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('번역 중 오류가 발생했습니다.');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('lensDictSheetHeightV2');
@@ -417,6 +457,27 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
             ))}
           </div>
         </div>
+        {useGeminiTranslate && geminiApiKey && (
+          <div className="pt-3 border-t border-outline-variant mt-1 flex justify-end shrink-0">
+            <button
+              onClick={handleTranslate}
+              disabled={isTranslating}
+              className="px-4 py-2 bg-primary-container text-on-primary-container rounded-xl hover:opacity-90 transition-opacity text-sm font-semibold shadow-sm disabled:opacity-50 flex items-center gap-2"
+            >
+              {isTranslating ? (
+                <>
+                  <span className="material-symbols-outlined animate-spin">sync</span>
+                  번역 중...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[18px]">translate</span>
+                  전체 문단 AI 번역
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     );
   };

@@ -17,6 +17,8 @@ export default function SettingsModal({ onClose }: Props) {
   const [fallbackApiType, setFallbackApiType] = useState<'freedict' | 'wikipedia' | 'none'>('freedict');
   const [googleApiKey, setGoogleApiKey] = useState('');
   const [useGoogleOCR, setUseGoogleOCR] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [useGeminiTranslate, setUseGeminiTranslate] = useState(false);
   
   const workerRef = useRef<Worker | null>(null);
 
@@ -56,6 +58,9 @@ export default function SettingsModal({ onClose }: Props) {
 
     setGoogleApiKey(localStorage.getItem('lensDictGoogleApiKey') || '');
     setUseGoogleOCR(localStorage.getItem('lensDictUseGoogleOCR') === 'true');
+    
+    setGeminiApiKey(localStorage.getItem('lensDictGeminiApiKey') || '');
+    setUseGeminiTranslate(localStorage.getItem('lensDictUseGeminiTranslate') === 'true');
 
     return () => {
       workerRef.current?.terminate();
@@ -170,24 +175,6 @@ export default function SettingsModal({ onClose }: Props) {
             />
           </div>
 
-          {/* PWA 오프라인 보안 캐시 초기화 방어 구역 */}
-          <div className="flex items-center justify-between bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
-            <div>
-              <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px]">security</span>
-                PWA 보안 캐시 관리
-              </p>
-              <p className="text-xs text-on-surface-variant mt-0.5">로그아웃 및 기기 반납 대비 (오프라인 캐시 전수 파기)</p>
-            </div>
-            <button
-              onClick={handlePurgeCache}
-              type="button"
-              className="px-3.5 py-2 bg-primary-container text-on-primary-container rounded-xl hover:opacity-90 transition-opacity text-xs font-semibold whitespace-nowrap shadow-sm"
-            >
-              캐시 즉시 파기
-            </button>
-          </div>
-
           {/* 구글 OCR API 설정 */}
           <div className="flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
             <div>
@@ -214,6 +201,40 @@ export default function SettingsModal({ onClose }: Props) {
               placeholder="API Key 입력 (선택사항)"
               value={googleApiKey}
               onChange={handleApiKeyChange}
+              className="w-full text-sm p-2 rounded-lg bg-surface-container border border-outline-variant focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+            />
+          </div>
+
+          {/* 구글 번역 Gemini API 설정 */}
+          <div className="flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-on-surface text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">translate</span>
+                  구글 번역 Gemini API 설정
+                </p>
+                <input
+                  type="checkbox"
+                  checked={useGeminiTranslate}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setUseGeminiTranslate(checked);
+                    localStorage.setItem('lensDictUseGeminiTranslate', String(checked));
+                  }}
+                  className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
+                />
+              </div>
+              <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">문장 번역을 위한 Gemini API 키를 입력하세요. (Gemini-1.5-flash-lite 모델 사용)</p>
+            </div>
+            <input
+              type="password"
+              placeholder="Gemini API Key 입력 (선택사항)"
+              value={geminiApiKey}
+              onChange={(e) => {
+                const val = e.target.value;
+                setGeminiApiKey(val);
+                localStorage.setItem('lensDictGeminiApiKey', val);
+              }}
               className="w-full text-sm p-2 rounded-lg bg-surface-container border border-outline-variant focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
             />
           </div>
