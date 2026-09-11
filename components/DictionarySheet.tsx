@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
 import { getLemmas } from '../lib/lemmatizer';
-import { extractKoreanRoot } from '../lib/koreanLemmatizer';
 
 interface LemmaInfo {
   originalWord: string;
@@ -172,6 +171,22 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 label: cand.label,
               };
               break;
+            }
+          }
+        }
+
+        // 한국어 조사 분리 DB 매칭 (사전 폴백 방식)
+        if (!result && /[가-힣]/.test(trimmed)) {
+          for (let i = 1; i <= trimmed.length - 2; i++) {
+            const candidate = trimmed.slice(0, trimmed.length - i);
+            if (candidate.length < 2) break; // 최소 2글자 이상 남아야 함
+            
+            const candRes = await db.dictionary.where('word').equals(candidate).first();
+            if (candRes) {
+              if (isMounted) {
+                setSearchWord(candidate);
+              }
+              return; // 새로운 검색어로 useEffect가 다시 실행될 것이므로 종료
             }
           }
         }
@@ -452,7 +467,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                 style={{ fontSize: dynamicFontSize }}
               >
                 {line.split(' ').map((word, j) => {
-                  const cleanWord = extractKoreanRoot(word);
+                  let cleanWord = '';
+                  if (/[가-힣]/.test(word)) {
+                     cleanWord = word.replace(/^[.,!?()[\]{}"'“”‘’<>\-=_+*/&^%$#@~`|\\]+/, '').replace(/[.,!?()[\]{}"'“”‘’<>\-=_+*/&^%$#@~`|\\]+$/, '');
+                  } else {
+                     cleanWord = word.replace(/[^a-zA-Z0-9-]/g, '');
+                  }
                   return (
                     <span
                       key={j}

@@ -500,14 +500,15 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
           </p>
           <button
             onClick={startCamera}
-            className="px-6 py-3 bg-primary-container text-on-primary-container rounded-full font-label-xl shadow-[0_0_15px_rgba(57,255,20,0.3)] hover:scale-105 transition-transform"
+            className="w-[200px] px-6 py-3 bg-primary-container text-on-primary-container rounded-full font-label-xl shadow-[0_0_15px_rgba(57,255,20,0.3)] hover:scale-105 transition-transform flex items-center justify-center gap-2"
           >
+            <span className="material-symbols-outlined text-[20px]">photo_camera</span>
             카메라 시작
           </button>
           
           <button
             onClick={onStartDictionaryMode}
-            className="mt-4 px-4 py-2 bg-surface-container-highest text-on-surface-variant rounded-full font-label-lg shadow-sm hover:scale-105 hover:bg-surface-container-highest/80 transition-all flex items-center gap-2"
+            className="mt-4 w-[200px] px-6 py-3 bg-surface-container-highest text-on-surface-variant rounded-full font-label-xl shadow-sm hover:scale-105 hover:bg-surface-container-highest/80 transition-all flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">menu_book</span>
             영한사전 모드
