@@ -84,7 +84,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `아래 텍스트는 OCR로 인식하거나 클립보드로 입력한 텍스트야. 일부 문장이 잘려있을 수 있지만, 주어진 내용 그대로 번역하고 코멘트 없이 결과 내용만 출력해줘. 영어일 때는 한글로, 한글일 때는 영어로 번역해주면 될거야.\n\n[텍스트]\n${scannedTextBlock}`
+              text: `아래 텍스트는 OCR로 인식하거나 클립보드로 입력한 텍스트야. 일부 문장이 잘려있을 수 있지만, 주어진 내용 그대로 번역(영어는 한글로, 한글은 영어로)하고, 번역이 불가한 단어 부분은 원문 그대로 유지해줘. 주석 없이 결과 내용만 출력해줘.\n\n[텍스트]\n${scannedTextBlock}`
             }]
           }]
         })
