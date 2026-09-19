@@ -19,6 +19,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [useGoogleOCR, setUseGoogleOCR] = useState(false);
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [useGeminiTranslate, setUseGeminiTranslate] = useState(false);
+  const [startDictMode, setStartDictMode] = useState(false);
   
   const workerRef = useRef<Worker | null>(null);
 
@@ -61,6 +62,7 @@ export default function SettingsModal({ onClose }: Props) {
     
     setGeminiApiKey(localStorage.getItem('lensDictGeminiApiKey') || '');
     setUseGeminiTranslate(localStorage.getItem('lensDictUseGeminiTranslate') === 'true');
+    setStartDictMode(localStorage.getItem('lensDictStartDictMode') === 'true');
 
     return () => {
       workerRef.current?.terminate();
@@ -160,7 +162,6 @@ export default function SettingsModal({ onClose }: Props) {
           </div>
 
           <div className="bg-surface-container-highest p-3 rounded-xl border border-outline-variant/50">
-            <h3 className="font-semibold text-sm text-on-surface mb-1">스타딕 형식의 사전 파일(zip)을 지원합니다.</h3>
             <input 
               type="file" 
               accept=".zip" 
@@ -285,6 +286,24 @@ export default function SettingsModal({ onClose }: Props) {
               </label>
             </div>
           </div>
+
+          {/* 시작 모드 설정 */}
+          <label className="flex items-center gap-2.5 cursor-pointer bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm hover:bg-surface-container-low/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={startDictMode}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setStartDictMode(checked);
+                localStorage.setItem('lensDictStartDictMode', String(checked));
+              }}
+              className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary shrink-0"
+            />
+            <div>
+              <p className="font-medium text-sm text-on-surface">영한사전모드로 시작</p>
+              <p className="text-[11px] text-on-surface-variant">앱 실행 시 카메라 대신 단어 입력 화면으로 바로 시작합니다.</p>
+            </div>
+          </label>
 
           {isParsing && (
             <div className="px-2">

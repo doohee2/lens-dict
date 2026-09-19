@@ -25,6 +25,18 @@ export default function Home() {
     setGeminiApiKey(localStorage.getItem('lensDictGeminiApiKey') || '');
   }, [isSettingsOpen]);
 
+  // 앱 시작 시 영한사전모드로 바로 진입
+  useEffect(() => {
+    if (localStorage.getItem('lensDictStartDictMode') === 'true') {
+      setGlobalOCRText(' ');
+      setTextSource('clipboard');
+      setTimeout(() => {
+        setIsSheetMinimized(false);
+        setAutoFocusSignal(prev => prev + 1);
+      }, 100);
+    }
+  }, []);
+
   useEffect(() => {
     if (globalOCRText && globalOCRText.trim().length > 0) {
       const saved = localStorage.getItem('lensDictHistory');
