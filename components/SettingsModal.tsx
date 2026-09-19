@@ -160,20 +160,31 @@ export default function SettingsModal({ onClose }: Props) {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <input 
-                  type="file" 
-                  accept=".zip" 
-                  onChange={handleFileUpload} 
-                  disabled={isParsing}
-                  className="block w-full text-sm text-on-surface-variant
-                    file:mr-3 file:py-1.5 file:px-3
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-primary-container file:text-on-primary-container
-                    hover:file:opacity-90 disabled:opacity-50"
-                />
+                <label className={`cursor-pointer px-4 py-1.5 rounded-full text-sm font-semibold bg-primary-container text-on-primary-container hover:opacity-90 transition-opacity whitespace-nowrap ${isParsing ? 'opacity-50 pointer-events-none' : ''}`}>
+                  파일 선택
+                  <input 
+                    type="file" 
+                    accept=".zip" 
+                    onChange={handleFileUpload} 
+                    disabled={isParsing}
+                    className="hidden"
+                  />
+                </label>
                 <p className="text-[11px] text-on-surface-variant whitespace-nowrap shrink-0">스타딕 사전 파일 지원</p>
               </div>
+            )}
+
+            {isParsing && (
+              <div className="mt-1 pt-2 border-t border-outline-variant/30 px-1">
+                <div className="w-full bg-surface-container-highest rounded-full h-1.5 mb-2 overflow-hidden">
+                  <div className="bg-primary-fixed-dim h-1.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                </div>
+                <p className="text-xs text-on-surface-variant font-medium text-center">{status}</p>
+              </div>
+            )}
+            
+            {!isParsing && status && (
+              <p className="text-xs text-primary-fixed-dim font-medium text-center mt-1 px-1">{status}</p>
             )}
           </div>
 
@@ -305,19 +316,6 @@ export default function SettingsModal({ onClose }: Props) {
               <p className="text-[11px] text-on-surface-variant">앱 실행 시 카메라 대신 단어 입력 화면으로 바로 시작합니다.</p>
             </div>
           </label>
-
-          {isParsing && (
-            <div className="px-2">
-              <div className="w-full bg-surface-container-highest rounded-full h-2.5 mb-2 overflow-hidden">
-                <div className="bg-primary-fixed-dim h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
-              </div>
-              <p className="text-sm text-on-surface-variant font-medium">{status}</p>
-            </div>
-          )}
-
-          {!isParsing && status && (
-            <p className="text-sm text-primary-fixed-dim font-medium px-2">{status}</p>
-          )}
         </div>
       </div>
     </div>
