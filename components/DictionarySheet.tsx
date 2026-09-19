@@ -321,8 +321,11 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       setSearchFailedInfo(null);
     }
 
+    const isKorean = /[가-힣]/.test(word);
+    const wikiDomain = isKorean ? 'ko.wikipedia.org' : 'en.wikipedia.org';
+
     try {
-      let res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(word)}`, { signal });
+      let res = await fetch(`https://${wikiDomain}/api/rest_v1/page/summary/${encodeURIComponent(word)}`, { signal });
 
       if (res.ok) {
         const data: WikiResult = await res.json();
@@ -336,7 +339,9 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       if (!fallbackFound && lemmasArr.length > 0) {
         for (const cand of lemmasArr) {
           try {
-            res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cand.lemma)}`, { signal });
+            const isCandKorean = /[가-힣]/.test(cand.lemma);
+            const candDomain = isCandKorean ? 'ko.wikipedia.org' : 'en.wikipedia.org';
+            res = await fetch(`https://${candDomain}/api/rest_v1/page/summary/${encodeURIComponent(cand.lemma)}`, { signal });
             if (res.ok) {
               const data: WikiResult = await res.json();
               if (data.extract) {
@@ -439,6 +444,29 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
             {textSource === 'clipboard' ? '클립보드 텍스트 (단어 탭하여 선택)' : 'OCR 스캔 텍스트 (단어 탭하여 선택)'}
           </h3>
           <div className="flex gap-1 -mr-1">
+            <button
+              onClick={async () => {
+                try {
+                  if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    if (text && text.trim().length > 0) {
+                      onUpdateScannedText(text.trim());
+                    } else {
+                      alert('클립보드가 비어있습니다.');
+                    }
+                  } else {
+                    alert('이 브라우저에서는 클립보드 읽기를 지원하지 않습니다.');
+                  }
+                } catch (e) {
+                  console.log('Clipboard access denied', e);
+                  alert('클립보드 접근이 거부되었습니다.');
+                }
+              }}
+              title="클립보드 붙여넣기"
+              className="text-on-surface-variant hover:text-primary transition-colors p-1"
+            >
+              <span className="material-symbols-outlined">content_paste</span>
+            </button>
             <button
               onClick={onOpenHistory}
               title="히스토리 열기"
@@ -650,7 +678,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
 
               {searchFailedInfo && (
                 <div className="p-3 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
-                  {searchFailedInfo.source === 'freedict' ? '오픈 사전에서 ' : '영문 위키에서 '}
+                  {searchFailedInfo.source === 'freedict' ? '오픈 사전에서 ' : '위키에서 '}
                   &lsquo;{searchFailedInfo.word}&rsquo; 단어를 찾지 못했습니다.
                 </div>
               )}
@@ -716,7 +744,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
             ) : (
               <span className="material-symbols-outlined text-[16px]">public</span>
             )}
-            영문 위키피디아
+            위키피디아
           </button>
         </div>
       </div>

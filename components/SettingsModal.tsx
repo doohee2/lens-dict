@@ -279,7 +279,7 @@ export default function SettingsModal({ onClose }: Props) {
                   className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
                 />
                 <div>
-                  <p className="font-medium text-sm text-on-surface">영문 위키피디아 (Wikipedia)</p>
+                  <p className="font-medium text-sm text-on-surface">위키피디아 (Wikipedia)</p>
                   <p className="text-[11px] text-on-surface-variant">위키피디아의 백과사전식 요약을 검색합니다.</p>
                 </div>
               </label>

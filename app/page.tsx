@@ -60,30 +60,14 @@ export default function Home() {
     }
   };
 
-  const handleStartDictionaryMode = async () => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim().length > 0) {
-          setGlobalOCRText(text.trim());
-          setTextSource('clipboard');
-          setIsSheetMinimized(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.log('Clipboard access denied or empty', e);
-    }
-    
-    // [iOS/Safari 트랜지션 타이밍 버그 우회 및 상태 동기화]
-    // 클립보드가 비어있어도 동일한 OCR 바텀시트 UI(검색창)를 유지하기 위해 공백을 스캔 결과로 처리합니다.
-    // 비동기 팝업 없이 즉각적으로 실행될 경우, React 렌더링 틱과 CSS transition이 경합하여 
-    // 바텀시트가 열리지 않고 닫힌(minimized) 상태로 렌더링되는 현상을 방지하기 위해 100ms의 마이크로 딜레이를 줍니다.
+  const handleStartDictionaryMode = () => {
+    // 클립보드 자동 읽기를 제거 — "Paste/Speak" 팝업 없이 즉시 검색창을 열어 바로 타이핑 가능하도록 개선
+    // 클립보드 붙여넣기는 바텀시트 내 별도 📋 버튼을 통해 사용자가 원할 때만 수행
     setGlobalOCRText(' ');
     setTextSource('clipboard');
     setTimeout(() => {
       setIsSheetMinimized(false);
-      setAutoFocusSignal(prev => prev + 1); // 빈 텍스트 상태로 열릴 때는 즉각적인 검색을 위해 인풋 박스에 포커스
+      setAutoFocusSignal(prev => prev + 1);
     }, 100);
   };
 
