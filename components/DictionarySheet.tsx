@@ -441,32 +441,34 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
       <div className="bg-surface-container-lowest p-5 md:p-6 rounded-2xl w-full text-left shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-outline-variant flex-1 flex flex-col overflow-hidden @container">
         <div className="flex justify-between items-center mb-3 pb-3 border-b border-outline-variant shrink-0">
           <h3 className="font-bold text-primary-fixed-dim">
-            {textSource === 'clipboard' ? '클립보드 텍스트 (단어 탭하여 선택)' : 'OCR 스캔 텍스트 (단어 탭하여 선택)'}
+            {textSource === 'clipboard' ? '클립보드 텍스트' : 'OCR 스캔 텍스트'}
           </h3>
           <div className="flex gap-1 -mr-1">
-            <button
-              onClick={async () => {
-                try {
-                  if (navigator.clipboard && navigator.clipboard.readText) {
-                    const text = await navigator.clipboard.readText();
-                    if (text && text.trim().length > 0) {
-                      onUpdateScannedText(text.trim());
+            {textSource === 'clipboard' && (
+              <button
+                onClick={async () => {
+                  try {
+                    if (navigator.clipboard && navigator.clipboard.readText) {
+                      const text = await navigator.clipboard.readText();
+                      if (text && text.trim().length > 0) {
+                        onUpdateScannedText(text.trim());
+                      } else {
+                        alert('클립보드가 비어있습니다.');
+                      }
                     } else {
-                      alert('클립보드가 비어있습니다.');
+                      alert('이 브라우저에서는 클립보드 읽기를 지원하지 않습니다.');
                     }
-                  } else {
-                    alert('이 브라우저에서는 클립보드 읽기를 지원하지 않습니다.');
+                  } catch (e) {
+                    console.log('Clipboard access denied', e);
+                    alert('클립보드 접근이 거부되었습니다.');
                   }
-                } catch (e) {
-                  console.log('Clipboard access denied', e);
-                  alert('클립보드 접근이 거부되었습니다.');
-                }
-              }}
-              title="클립보드 붙여넣기"
-              className="text-on-surface-variant hover:text-primary transition-colors p-1"
-            >
-              <span className="material-symbols-outlined">content_paste</span>
-            </button>
+                }}
+                title="클립보드 붙여넣기"
+                className="text-on-surface-variant hover:text-primary transition-colors p-1"
+              >
+                <span className="material-symbols-outlined">content_paste</span>
+              </button>
+            )}
             <button
               onClick={onOpenHistory}
               title="히스토리 열기"
