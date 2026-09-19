@@ -143,37 +143,38 @@ export default function SettingsModal({ onClose }: Props) {
                 <p className="text-on-surface-variant w-full text-center py-2">현재 로컬에 저장된 사전 없음</p>
               )}
             </div>
-            <div className="flex justify-between items-center">
-              <p className="text-on-surface">총 단어 수</p>
-              <div className="flex items-center gap-4">
-                <span className="font-bold text-primary-fixed-dim">
-                  {dictSize !== null ? `${dictSize.toLocaleString()}개` : '로딩 중...'}
-                </span>
-                {!!dictName && (
+            {dictName ? (
+              <div className="flex justify-between items-center">
+                <p className="text-on-surface text-sm">총 단어 수</p>
+                <div className="flex items-center gap-4">
+                  <span className="font-bold text-primary-fixed-dim">
+                    {dictSize !== null ? `${dictSize.toLocaleString()}개` : '로딩 중...'}
+                  </span>
                   <button 
                     onClick={clearDictionary}
                     className="px-3 py-1.5 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold whitespace-nowrap"
                   >
                     사전 삭제
                   </button>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-surface-container-highest p-3 rounded-xl border border-outline-variant/50">
-            <input 
-              type="file" 
-              accept=".zip" 
-              onChange={handleFileUpload} 
-              disabled={isParsing}
-              className="block w-full text-sm text-on-surface-variant
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-primary-container file:text-on-primary-container
-                hover:file:opacity-90 disabled:opacity-50"
-            />
+            ) : (
+              <div className="flex items-center gap-3">
+                <input 
+                  type="file" 
+                  accept=".zip" 
+                  onChange={handleFileUpload} 
+                  disabled={isParsing}
+                  className="block w-full text-sm text-on-surface-variant
+                    file:mr-3 file:py-1.5 file:px-3
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-primary-container file:text-on-primary-container
+                    hover:file:opacity-90 disabled:opacity-50"
+                />
+                <p className="text-[11px] text-on-surface-variant whitespace-nowrap shrink-0">스타딕 사전 파일 지원</p>
+              </div>
+            )}
           </div>
 
           {/* 구글 OCR API 설정 */}
