@@ -574,7 +574,6 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
             <input
               ref={searchInputRef}
               type="text"
-              autoFocus
               className="block w-full pl-12 pr-24 py-3 bg-surface-container border border-outline-variant rounded-xl text-base font-bold text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow"
               placeholder="단어를 선택하거나 입력하세요."
               value={searchWord}
