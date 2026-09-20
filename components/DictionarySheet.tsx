@@ -66,6 +66,7 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
   const [lemmatizedSearchWord, setLemmatizedSearchWord] = useState<string | null>(null);
   const [lemmaSource, setLemmaSource] = useState<string | null>(null); // e.g. "verb" or "noun"
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const heightRef = useRef(65);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -175,8 +176,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
           }
         }
 
-        // 한국어 조사 분리 DB 매칭 (사전 폴백 방식)
-        if (!result && /[가-힣]/.test(trimmed)) {
+        // 한국어 조사 분리 DB 매칭 (사전 폴백 방식) - 직접 입력 중이 아닐 때만 동작
+        if (!isTyping && !result && /[가-힣]/.test(trimmed)) {
           for (let i = 1; i <= trimmed.length - 2; i++) {
             const candidate = trimmed.slice(0, trimmed.length - i);
             if (candidate.length < 2) break; // 최소 2글자 이상 남아야 함
@@ -507,7 +508,10 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                     <span
                       key={j}
                       onClick={() => {
-                        if (cleanWord) setSearchWord(cleanWord);
+                        if (cleanWord) {
+                          setIsTyping(false);
+                          setSearchWord(cleanWord);
+                        }
                       }}
                       className="cursor-pointer hover:bg-primary-container hover:text-on-primary-container rounded px-1 transition-colors active:bg-primary-fixed"
                     >
@@ -577,7 +581,10 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
               className="block w-full pl-12 pr-24 py-3 bg-surface-container border border-outline-variant rounded-xl text-base font-bold text-on-surface focus:ring-2 focus:ring-primary-fixed-dim focus:border-transparent placeholder-on-surface-variant transition-shadow"
               placeholder="단어를 선택하거나 입력하세요."
               value={searchWord}
-              onChange={(e) => setSearchWord(e.target.value)}
+              onChange={(e) => {
+                setIsTyping(true);
+                setSearchWord(e.target.value);
+              }}
             />
             {searchWord && (
               <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
