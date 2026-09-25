@@ -478,7 +478,7 @@ export default function CameraViewfinder({ onTextScanned, resetCameraSignal, onS
     <section 
       ref={containerRef} 
       onPointerDown={handleViewfinderPointerDown}
-      className="w-full h-full relative bg-surface-container-lowest flex-shrink-0 flex items-center justify-center overflow-hidden cursor-crosshair"
+      className="w-full flex-1 relative bg-surface-container-lowest flex items-center justify-center overflow-hidden cursor-crosshair"
     >
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-container-low to-surface-container-highest opacity-50 mix-blend-overlay"></div>
