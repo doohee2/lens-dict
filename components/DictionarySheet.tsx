@@ -489,7 +489,12 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-auto w-full">
+        <div 
+          className="flex-1 overflow-auto w-full"
+          onClick={() => {
+            searchInputRef.current?.focus();
+          }}
+        >
           <div className="flex flex-col justify-start items-start text-left min-w-max pb-4 pr-4">
             {lines.map((line, i) => (
               <p
@@ -507,7 +512,8 @@ export default function DictionarySheet({ scannedTextBlock, onClearScannedText, 
                   return (
                     <span
                       key={j}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (cleanWord) {
                           setIsTyping(false);
                           setSearchWord(cleanWord);
