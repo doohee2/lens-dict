@@ -1,8 +1,8 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const JSZip = require('jszip');
 
 async function testIdx() {
-  const data = fs.readFileSync('C:\\Users\\doohe\\OneDrive\\Desktop\\바이브코딩\\lens-dict\\stardict\\Dong-A_Prime_EKKE_Dictionary.zip');
+  const data = fs.readFileSync(require('path').join(__dirname, '../stardict/Dong-A_Prime_EKKE_Dictionary.zip'));
   const zip = await JSZip.loadAsync(data);
   
   const idxFile = zip.files['Dong-A_Prime_EKKE_Dictionary.idx'];
