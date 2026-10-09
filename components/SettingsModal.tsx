@@ -20,12 +20,12 @@ export default function SettingsModal({ onClose }: Props) {
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [useGeminiTranslate, setUseGeminiTranslate] = useState(false);
   const [startDictMode, setStartDictMode] = useState(false);
-  
+
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../lib/dictParser.worker.ts', import.meta.url));
-    
+
     workerRef.current.onmessage = (event) => {
       const { type, progress, message, error } = event.data;
       if (type === 'PROGRESS') {
@@ -44,11 +44,11 @@ export default function SettingsModal({ onClose }: Props) {
 
     checkDictSize();
     setDictName(localStorage.getItem('lensDictName'));
-    
+
     // Fallback API Type Migration & Initialization
     const savedFallbackType = localStorage.getItem('lensDictFallbackApiType');
     const oldSavedAuto = localStorage.getItem('lensDictAutoFreeDict');
-    
+
     if (savedFallbackType) {
       setFallbackApiType(savedFallbackType as 'freedict' | 'wikipedia' | 'none');
     } else if (oldSavedAuto === 'false') {
@@ -59,7 +59,7 @@ export default function SettingsModal({ onClose }: Props) {
 
     setGoogleApiKey(localStorage.getItem('lensDictGoogleApiKey') || '');
     setUseGoogleOCR(localStorage.getItem('lensDictUseGoogleOCR') === 'true');
-    
+
     setGeminiApiKey(localStorage.getItem('lensDictGeminiApiKey') || '');
     setUseGeminiTranslate(localStorage.getItem('lensDictUseGeminiTranslate') === 'true');
     setStartDictMode(localStorage.getItem('lensDictStartDictMode') === 'true');
@@ -103,7 +103,7 @@ export default function SettingsModal({ onClose }: Props) {
 
   const clearDictionary = async () => {
     if (!window.confirm('정말로 로컬 사전 데이터를 모두 삭제하시겠습니까?')) return;
-    
+
     await db.dictionary.clear();
     await db.resources.clear();
     localStorage.removeItem('lensDictName');
@@ -122,18 +122,18 @@ export default function SettingsModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-surface-container w-full max-w-lg rounded-2xl p-6 shadow-2xl relative border border-outline-variant">
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <span className="material-symbols-outlined">close</span>
         </button>
-        
+
         <h2 className="text-xl font-bold text-primary-fixed-dim mb-3 flex items-center gap-2">
           <span className="material-symbols-outlined">database</span>
           사전 데이터 관리
         </h2>
-        
+
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 shadow-sm">
             <div className="flex justify-between items-center w-full">
@@ -150,7 +150,7 @@ export default function SettingsModal({ onClose }: Props) {
                   <span className="font-bold text-primary-fixed-dim">
                     {dictSize !== null ? `${dictSize.toLocaleString()}개` : '로딩 중...'}
                   </span>
-                  <button 
+                  <button
                     onClick={clearDictionary}
                     className="px-3 py-1.5 bg-error-container/20 text-error rounded-xl hover:bg-error-container/40 transition-colors text-sm font-semibold whitespace-nowrap"
                   >
@@ -162,10 +162,10 @@ export default function SettingsModal({ onClose }: Props) {
               <div className="flex items-center gap-3">
                 <label className={`cursor-pointer px-4 py-1.5 rounded-full text-sm font-semibold bg-primary-container text-on-primary-container hover:opacity-90 transition-opacity whitespace-nowrap ${isParsing ? 'opacity-50 pointer-events-none' : ''}`}>
                   파일 선택
-                  <input 
-                    type="file" 
-                    accept=".zip" 
-                    onChange={handleFileUpload} 
+                  <input
+                    type="file"
+                    accept=".zip"
+                    onChange={handleFileUpload}
                     disabled={isParsing}
                     className="hidden"
                   />
@@ -182,7 +182,7 @@ export default function SettingsModal({ onClose }: Props) {
                 <p className="text-xs text-on-surface-variant font-medium text-center">{status}</p>
               </div>
             )}
-            
+
             {!isParsing && status && (
               <p className="text-xs text-primary-fixed-dim font-medium text-center mt-1 px-1">{status}</p>
             )}
@@ -210,7 +210,7 @@ export default function SettingsModal({ onClose }: Props) {
               <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">고성능 구글 OCR을 사용하기 위한 API 키를 입력하세요. 키는 로컬 기기에만 저장됩니다.</p>
             </div>
             <input
-              type="password"
+              type="text"
               placeholder="API Key 입력 (선택사항)"
               value={googleApiKey}
               onChange={handleApiKeyChange}
@@ -237,10 +237,10 @@ export default function SettingsModal({ onClose }: Props) {
                   className="w-5 h-5 rounded-md text-primary bg-surface-container border-outline-variant focus:ring-primary focus:ring-offset-0 cursor-pointer accent-primary"
                 />
               </div>
-              <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">문장 번역을 위한 Gemini API 키를 입력하세요. (Gemini-1.5-flash-lite 모델 사용)</p>
+              <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">문장 번역을 위한 Gemini API 키를 입력하세요. (Gemini-flash-lite 모델 사용)</p>
             </div>
             <input
-              type="password"
+              type="text"
               placeholder="Gemini API Key 입력 (선택사항)"
               value={geminiApiKey}
               onChange={(e) => {
@@ -261,7 +261,7 @@ export default function SettingsModal({ onClose }: Props) {
               </p>
               <p className="text-[11px] text-on-surface-variant mt-0.5 mb-1">로컬 사전에 단어가 없을 때 사용할 외부 검색 API를 선택합니다.</p>
             </div>
-            
+
             <div className="flex flex-col gap-1">
               <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low/50 transition-colors">
                 <input
