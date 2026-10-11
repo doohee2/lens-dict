@@ -61,8 +61,16 @@ export default function AboutModal({ onClose }: Props) {
         </button>
         
         {/* Footer */}
-        <div className="w-full text-right text-xs text-on-surface-variant font-medium">
-          {APP_INFO.footer}
+        <div className="w-full flex justify-between items-center text-xs text-on-surface-variant font-medium px-1">
+          <a
+            href="https://landing-doohee2.vercel.app/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline hover:text-on-surface transition-colors"
+          >
+            개인정보처리방침
+          </a>
+          <span>{APP_INFO.footer}</span>
         </div>
       </div>
     </div>
