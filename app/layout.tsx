@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "OCR 단어 찾기",
   description: "오프라인 카메라 OCR 영어 사전 PWA",
   manifest: "/manifest.json",
+  verification: {
+    google: "WdxZQ1sGoma51XTaHhrfapOp64txalt2SBACCB7GOCY",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
